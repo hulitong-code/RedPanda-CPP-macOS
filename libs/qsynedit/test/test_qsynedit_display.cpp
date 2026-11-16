@@ -239,12 +239,24 @@ void TestQSyneditDisplay::test_gutter_fold_button_paints()
     mEdit->setOptions(opts);
 }
 
+void TestQSyneditDisplay::test_gutter_marker_click_emits_signal()
+{
+    mEdit->loadContent(makeLines(5));
+    QVERIFY(mEdit->gutter().leftOffset() > 0);
+    QSignalSpy clicks(mEdit.get(), &QSynEdit::gutterClicked);
+    QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::NoModifier,
+                      QPoint(mEdit->gutter().leftOffset() / 2, mEdit->textHeight() + 2));
+    QCOMPARE(clicks.count(), 1);
+    QCOMPARE(clicks.at(0).at(3).toInt(), 1);
+    QCOMPARE(mEdit->selBegin(), mEdit->selEnd());
+}
+
 void TestQSyneditDisplay::test_gutter_click_selects_line()
 {
     mEdit->loadContent(makeLines(5));
     int h = mEdit->textHeight();
     QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::NoModifier,
-                      QPoint(0, h + 2));
+                      QPoint(mEdit->gutter().leftOffset(), h + 2));
     QCOMPARE(mEdit->selBegin(), CharPos(0, 1));
     QCOMPARE(mEdit->selEnd(), CharPos(0, 2));
     QCOMPARE(mEdit->caretPos(), CharPos(0, 0));
@@ -256,9 +268,9 @@ void TestQSyneditDisplay::test_gutter_shift_click_selects_line_range()
     mEdit->loadContent(makeLines(5));
     int h = mEdit->textHeight();
     QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::NoModifier,
-                      QPoint(0, h + 2));
+                      QPoint(mEdit->gutter().leftOffset(), h + 2));
     QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::ShiftModifier,
-                      QPoint(0, 3 * h + 2));
+                      QPoint(mEdit->gutter().leftOffset(), 3 * h + 2));
     QCOMPARE(mEdit->selBegin(), CharPos(0, 1));
     QCOMPARE(mEdit->selEnd(), CharPos(0, 4));
     QCOMPARE(mEdit->caretPos(), CharPos(0, 0));
@@ -266,9 +278,9 @@ void TestQSyneditDisplay::test_gutter_shift_click_selects_line_range()
     clearContent();
     mEdit->loadContent(makeLines(5));
     QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::NoModifier,
-                      QPoint(0, 3 * h + 2));
+                      QPoint(mEdit->gutter().leftOffset(), 3 * h + 2));
     QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::ShiftModifier,
-                      QPoint(0, h + 2));
+                      QPoint(mEdit->gutter().leftOffset(), h + 2));
     QCOMPARE(mEdit->selBegin(), CharPos(0, 1));
     QCOMPARE(mEdit->selEnd(), CharPos(0, 4));
     QCOMPARE(mEdit->caretPos(), CharPos(0, 0));
@@ -280,7 +292,7 @@ void TestQSyneditDisplay::test_gutter_shift_click_requires_full_line_selection()
     mEdit->setCaretAndSelection(CharPos{3, 1}, CharPos{1, 1}, CharPos{3, 1});
     int h = mEdit->textHeight();
     QTest::mouseClick(mEdit->viewport(), Qt::LeftButton, Qt::ShiftModifier,
-                      QPoint(0, 3 * h + 2));
+                      QPoint(mEdit->gutter().leftOffset(), 3 * h + 2));
     QCOMPARE(mEdit->selBegin(), CharPos(0, 3));
     QCOMPARE(mEdit->selEnd(), CharPos(0, 4));
     QCOMPARE(mEdit->caretPos(), CharPos(3, 1));

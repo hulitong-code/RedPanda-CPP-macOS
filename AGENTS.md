@@ -177,3 +177,5 @@ The macOS packaging script enables Lua and Git integration, deploys Qt with an e
 - 当修改了上文描述的任何内容（构建选项、测试命令、目录职责）时，请同步更新本 `AGENTS.md`。
 
 The Apple Silicon end-user installer is `packages/macos/install.sh`. Its installation and acceptance steps are in `docs/INSTALL_APPLE_SILICON.md`. It preserves existing settings; only `seed-settings.py` creates a fresh Chinese/One Dark/GCC profile. `deploy-qt.sh` deploys the native widgets plugins without unrelated Qt modules.
+
+Private-use standalone DMG packaging lives in `packages/macos/standalone/`. It includes locally licensed Apple tools and must not be uploaded as a public binary release. Generated private downloads live in ignored `downloads/`.

@@ -31,3 +31,6 @@ dist
 # macOS Things
 .DS_Store
 AGENTS.local.md
+
+# Private-use binary downloads (includes locally licensed Apple tools)
+/downloads/

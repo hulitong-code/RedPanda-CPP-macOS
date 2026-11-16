@@ -28,6 +28,27 @@ private:
 
 }
 
+void TestEditorDisplay::test_gutter_click_toggles_breakpoint()
+{
+    init_editor();
+    mEditor->setFileType(FileType::CppSource, false);
+    mEditor->loadContent(QStringList{"int main() {", "    return 0;", "}"});
+    const int y = mEditor->textHeight() + 2;
+    const int markerX = mEditor->gutter().leftOffset() / 2;
+    QVERIFY(!mEditor->hasBreakpoint(1));
+    QTest::mouseClick(mEditor->viewport(), Qt::LeftButton, Qt::NoModifier,
+                      QPoint(markerX, y));
+    QVERIFY(mEditor->hasBreakpoint(1));
+    QTest::mouseClick(mEditor->viewport(), Qt::LeftButton, Qt::NoModifier,
+                      QPoint(mEditor->gutter().leftOffset(), y));
+    QVERIFY(mEditor->hasBreakpoint(1));
+    QCOMPARE(mEditor->selBegin(), QSynedit::CharPos(0, 1));
+    QCOMPARE(mEditor->selEnd(), QSynedit::CharPos(0, 2));
+    QTest::mouseClick(mEditor->viewport(), Qt::LeftButton, Qt::NoModifier,
+                      QPoint(markerX, y));
+    QVERIFY(!mEditor->hasBreakpoint(1));
+}
+
 void TestEditorDisplay::test_fold_marks_paint()
 {
     mEditor->loadContent(QStringList{

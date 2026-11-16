@@ -1,5 +1,9 @@
 Red Panda C++ Version 3.6
 
+  - fix: Restore breakpoint clicks in the gutter icon margin while preserving line-number selection and code folding.
+
+  - enhancement: Add a private-use Apple Silicon DMG workflow with bundled GCC/SDK/LLDB and a native installer that preserves settings and moves older applications to Trash.
+
   - enhancement: Replace previous macOS application versions via recoverable Trash cleanup and migrate their configured tool paths.
 
   - enhancement: Add a reproducible Apple Silicon installer with first-install Chinese/One Dark/GCC settings and native Qt deployment.

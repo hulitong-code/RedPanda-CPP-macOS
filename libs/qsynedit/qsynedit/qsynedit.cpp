@@ -1716,8 +1716,11 @@ void QSynEdit::processGutterClick(QMouseEvent *event)
         }
     }
 
+    // Reserve the icon margin for marks such as breakpoints. Only clicks in
+    // the line-number area should select whole lines.
     if (line >= 0 && line < mDocument->count()
-            && event->button() == Qt::LeftButton) {
+            && event->button() == Qt::LeftButton
+            && x >= mGutter.leftOffset()) {
         CharPos start{0, line};
         CharPos end = gutterLineEnd(this, line);
         if (event->modifiers() == Qt::ShiftModifier
