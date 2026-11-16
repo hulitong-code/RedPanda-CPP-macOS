@@ -10,6 +10,15 @@
 > **Standalone DMG status:** the r3 DMG is a local private-use package containing
 > locally licensed Apple SDK/developer tools. It has **not been uploaded** as a
 > public release, so there is currently **no public DMG download link**.
+> **Why no public DMG?** This image bundles Apple SDK/developer tools whose
+> redistribution is restricted by [Apple's license, section 2.7](https://www.apple.com/legal/sla/docs/xcode.pdf).
+> Providing it by email does not waive those restrictions.
+>
+> **Need an installation package?** Email the maintainer at
+> [hulitong1023@163.com](mailto:hulitong1023@163.com) to ask about available packages
+> and installation help. Any package provided must comply with its components'
+> redistribution licenses; this is not an offer to distribute the private r3 image.
+>
 > See [download options and requirements](docs/INSTALL_APPLE_SILICON.md#download-options).
 
 Native GCC/LLDB debugging, `<bits/stdc++.h>`, Chinese UI, One Dark and red breakpoints.

@@ -18,6 +18,23 @@ The initial upstream snapshot is `5579eaf`; the LLDB-MI bridge is pinned to
   the public source installer described here. Do not confuse GitHub's automatic
   source ZIP archives with a prebuilt application.
 
+## Why the standalone DMG is not publicly available
+
+The private r3 image contains Apple SDK/developer tools copied from the
+maintainer's licensed local installation. [Section 2.7 of Apple's Xcode and Apple
+SDKs Agreement](https://www.apple.com/legal/sla/docs/xcode.pdf) restricts uploading,
+hosting, and redistributing Apple Software without express permission, subject
+to applicable exceptions. Hosting the same image on another server or sending it
+by email does not remove those restrictions.
+
+**Need an installation package or help installing?** Contact
+[hulitong1023@163.com](mailto:hulitong1023@163.com). You can ask the maintainer about
+available packages and installation options; please include your Mac chip and
+macOS version. Any package supplied must comply with its components' distribution
+licenses. This contact option does not promise distribution of the private r3
+image. Until a redistributable binary package is published, the public installation
+method is the source installer below.
+
 ## Requirements
 
 - Apple Silicon Mac, running a macOS release supported by Homebrew and Qt 6.
