@@ -116,6 +116,11 @@ void GDBMIDebuggerClient::run()
         path = cmdDir + PATH_SEPARATOR + path;
     }
     env.insert("PATH",path);
+#ifdef Q_OS_MACOS
+    env.remove("REDPANDA_DEBUG_INPUT_FILE");
+    if (clientType() == DebuggerType::LLDB_MI && pSettings->executor().redirectInput())
+        env.insert("REDPANDA_DEBUG_INPUT_FILE", QFileInfo(pSettings->executor().inputFilename()).absoluteFilePath());
+#endif
     mProcess->setProcessEnvironment(env);
 
     mProcess->setWorkingDirectory(workingDir);

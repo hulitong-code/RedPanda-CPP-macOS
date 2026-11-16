@@ -599,7 +599,11 @@ endif()
 
 if(${FILESYSTEM_LAYOUT} STREQUAL "bundle")
     set_target_properties(RedPandaIDE PROPERTIES
-        MACOSX_BUNDLE ON)
+        MACOSX_BUNDLE ON
+        MACOSX_BUNDLE_GUI_IDENTIFIER "net.redpanda-cpp.RedPandaIDE"
+        MACOSX_BUNDLE_BUNDLE_NAME "Red Panda C++"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}")
     set(MACOSX_BUNDLE_ICON_FILE RedPandaIDE.icns)
     set_source_files_properties(
         ${CMAKE_SOURCE_DIR}/platform/macos/RedPandaIDE.icns

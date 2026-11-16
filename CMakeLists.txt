@@ -306,7 +306,11 @@ endif()
 #############
 
 # templates
-if (XDG)
+if (APPLE AND "${FILESYSTEM_LAYOUT}" STREQUAL "bundle")
+    install(
+        DIRECTORY platform/macos/templates
+        DESTINATION RedPandaIDE.app/Contents/Resources)
+elseif (XDG)
     install(
         DIRECTORY platform/linux/templates
         DESTINATION share/${APP_NAME}

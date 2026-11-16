@@ -31,6 +31,7 @@
 #include <QThread>
 #include <QTimer>
 #include <memory>
+#include <atomic>
 #include "debuggermodels.h"
 #include "gdbmiresultparser.h"
 
@@ -220,6 +221,8 @@ public:
                          const QStringList& arguments,
                          QObject *parent = nullptr);
     void setInputFile(const QString& inputFile);
+    void setTerminalOnly(bool enabled) { mTerminalOnly = enabled; }
+    QString terminalDevice() const { return mTerminalDevice; }
     void stopDebug();
     void waitStart();
     const QStringList &binDirs() const;
@@ -232,7 +235,9 @@ private:
     QStringList mArguments;
     QString mGDBServer;
     int mPort;
-    bool mStop;
+    std::atomic<bool> mStop;
+    bool mTerminalOnly = false;
+    QString mTerminalDevice;
     QSemaphore mStartSemaphore;
     bool mErrorOccured;
     QString mInputFile;

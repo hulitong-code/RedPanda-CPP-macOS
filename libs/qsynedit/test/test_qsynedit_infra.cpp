@@ -13,6 +13,8 @@ void TestQSyneditInfra::test_fonts()
     // the bundled mono font must really be installed, not silently
     // substituted by an environment font
     QFont monoFont(defaultMonoFont());
+    // Measure the bundled glyphs, without platform emoji-font substitution.
+    monoFont.setStyleStrategy(QFont::NoFontMerging);
     monoFont.setPointSize(14);
     QCOMPARE(QFontInfo(monoFont).family(), defaultMonoFont());
 

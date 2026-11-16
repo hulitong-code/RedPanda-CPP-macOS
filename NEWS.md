@@ -1,5 +1,27 @@
 Red Panda C++ Version 3.6
 
+  - enhancement: Add a reproducible Apple Silicon installer with first-install Chinese/One Dark/GCC settings and native Qt deployment.
+
+  - enhancement: Show a solid red breakpoint marker in the Contrast icon set.
+
+  - fix: Use the selected C/C++ compiler paths in project makefiles instead of resolving another toolchain from PATH.
+
+  - enhancement: Support input-file redirection with the bundled macOS LLDB-MI bridge.
+
+  - fix: Disable unsupported fully static linking in Darwin release compiler profiles.
+
+  - fix: Use a native terminal with LLDB-MI on macOS instead of the unsupported lldb-server gdbserver mode.
+
+  - fix: Build the editor and parser with Qt 6 and Apple Clang without narrowing conversion errors.
+  - fix: Correct settings types and header lookup when Git integration is enabled.
+  - fix: Restore Git menus and adapt Git commands to the current process API.
+  - fix: Detect rapid same-size header changes on macOS using nanosecond timestamps.
+  - enhancement: Discover a bundled LLDB-MI debugger for GCC on macOS.
+  - fix: Install the Git password helper inside the macOS application bundle.
+  - fix: Set macOS application identity and sign the application before archiving it.
+  - fix: Consume the macOS packaging script's clean argument correctly.
+  - enhancement: Include native console, static-library and C++ threading project templates in the macOS bundle.
+
   - enhancement: Rewrite the C++ parser with structured declarations, scoped statements, and on-demand type evaluation.
   - fix: Column mode doesn't work.
   - enhancement: Split the editor to two View.

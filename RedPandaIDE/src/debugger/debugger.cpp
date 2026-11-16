@@ -37,6 +37,9 @@
 #include "../widgets/signalmessagedialog.h"
 #include <QApplication>
 #include <QRegularExpression>
+#include <QTemporaryDir>
+#include <QElapsedTimer>
+#include "../utils/escape.h"
 #include "../utils/terminal.h"
 
 Debugger::Debugger(QObject *parent) : QObject{parent},
@@ -106,8 +109,14 @@ bool Debugger::startClient(int compilerSetIndex,
         setDebuggerType(DebuggerType::LLDB_MI);
     else
         setDebuggerType(DebuggerType::GDB);
-    // force to lldb-server if using lldb-mi, which creates new console but does not bind inferior’s stdio to the new console on Windows.
+    bool nativeLldbTerminal = false;
+#ifdef Q_OS_MACOS
+    // lldb-server gdbserver is not supported on Apple platforms.
+    nativeLldbTerminal = mDebuggerType == DebuggerType::LLDB_MI;
+    setUseDebugServer(!nativeLldbTerminal && pSettings->debugger().useGDBServer());
+#else
     setUseDebugServer(pSettings->debugger().useGDBServer() || mDebuggerType == DebuggerType::LLDB_MI);
+#endif
     QString debuggerPath = compilerSet->debugger();
     //QFile debuggerProgram(debuggerPath);
 //    if (!isTextAllAscii(debuggerPath)) {
@@ -148,17 +157,27 @@ bool Debugger::startClient(int compilerSetIndex,
     }
     mMemoryModel->reset();
     mWatchModel->resetAllVarInfos();
-    if (useDebugServer()) {
+    if (useDebugServer() || nativeLldbTerminal) {
         QStringList params;
         if (pSettings->executor().useParams())
             params = parseArgumentsWithoutVariables(pSettings->executor().params());
         mTarget = new DebugTarget(inferior,compilerSet->debugServer(),pSettings->debugger().GDBServerPort(),params);
+        mTarget->setTerminalOnly(nativeLldbTerminal);
         if (pSettings->executor().redirectInput())
             mTarget->setInputFile(pSettings->executor().inputFilename());
         mTarget->addBinDirs(binDirs);
         mTarget->addBinDir(pSettings->dirs().appDir());
         mTarget->start();
         mTarget->waitStart();
+        if (nativeLldbTerminal && mTarget->terminalDevice().isEmpty()) {
+            mTarget->stopDebug();
+            mTarget->wait();
+            delete mTarget;
+            mTarget = nullptr;
+            QMessageBox::critical(pMainWindow, tr("Debugger"),
+                                  tr("Could not open a terminal for debugging."));
+            return false;
+        }
     }
     //delete when thread finished
     mClient = new GDBMIDebuggerClient(this, debuggerType());
@@ -212,6 +231,8 @@ bool Debugger::startClient(int compilerSetIndex,
     mClient->waitStart();
 
     mClient->initialize(inferior, inferiorHasSymbols);
+    if (nativeLldbTerminal)
+        static_cast<GDBMIDebuggerClient *>(mClient)->postCommand("-inferior-tty-set", mTarget->terminalDevice());
     includeOrSkipDirsInSymbolSearch(compilerSet->libDirs(), pSettings->debugger().skipCustomLibraries());
     includeOrSkipDirsInSymbolSearch(compilerSet->CIncludeDirs(), pSettings->debugger().skipCustomLibraries());
     includeOrSkipDirsInSymbolSearch(compilerSet->CppIncludeDirs(), pSettings->debugger().skipCustomLibraries());
@@ -255,6 +276,7 @@ void Debugger::cleanUp()
         //stop gdb server (if runs)
         if (mTarget) {
             mTarget->stopDebug();
+            mTarget->wait();
             mTarget->deleteLater();
             mTarget = nullptr;
         }
@@ -1202,6 +1224,48 @@ void DebugTarget::run()
     mStop = false;
     mErrorOccured = false;
 
+#ifdef Q_OS_MACOS
+    if (mTerminalOnly) {
+        QTemporaryDir session(QDir::tempPath() + "/redpanda-debug-XXXXXX");
+        const QString readyPath = session.filePath("terminal");
+        const QString scriptPath = session.filePath("debug.command");
+        auto quote = [](const QString &value) {
+            return escapeArgument(value, false, EscapeArgumentRule::BourneAgainShellPretty);
+        };
+        QFile script(scriptPath);
+        if (session.isValid() && script.open(QIODevice::WriteOnly)) {
+            // Terminal owns the tty; LLDB opens it without mixing program I/O with MI.
+            const QString shell = "#!/bin/sh\n"
+                "tty > " + quote(readyPath) + "\n"
+                "while [ -d " + quote(session.path()) + " ]; do /bin/sleep 0.2; done\n";
+            script.write(shell.toUtf8());
+            script.close();
+            script.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+            QProcess opener;
+            opener.start("/usr/bin/open", {"-a", "Terminal", scriptPath});
+            opener.waitForFinished(5000);
+            QElapsedTimer timer;
+            timer.start();
+            while (!mStop && timer.elapsed() < 15000) {
+                QFile ready(readyPath);
+                if (ready.open(QIODevice::ReadOnly)) {
+                    const QString device = QString::fromUtf8(ready.readAll()).trimmed();
+                    if (device.startsWith("/dev/tty") && QFileInfo::exists(device)) {
+                        mTerminalDevice = device;
+                        break;
+                    }
+                }
+                msleep(50);
+            }
+        }
+        mStartSemaphore.release(1);
+        if (!mTerminalDevice.isEmpty()) {
+            while (!mStop)
+                msleep(50);
+        }
+        return;
+    }
+#endif
     //find first available port
     QStringList execArgs;
     if (mGDBServer.endsWith(LLDB_SERVER_PROGRAM))

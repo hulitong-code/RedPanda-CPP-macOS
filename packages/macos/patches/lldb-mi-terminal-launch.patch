@@ -1,0 +1,59 @@
+diff --git a/src/MICmdCmdExec.cpp b/src/MICmdCmdExec.cpp
+index dc9b500..6670568 100644
+--- a/src/MICmdCmdExec.cpp
++++ b/src/MICmdCmdExec.cpp
+@@ -17,6 +17,8 @@
+ //              CMICmdCmdExecArguments          implementation.
+ //              CMICmdCmdExecAbort              implementation.
+ 
++#include <cstdlib>
++
+ // Third Party Headers:
+ #include "lldb/API/SBCommandInterpreter.h"
+ #include "lldb/API/SBProcess.h"
+@@ -130,33 +132,20 @@ bool CMICmdCmdExecRun::Execute() {
+   CMIUtilString strInferiorTty;
+   const bool bInferiorTty = rSessionInfo.SharedDataRetrieve<CMIUtilString>(
+       rSessionInfo.m_constStrSharedDataKeyInferiorTty, strInferiorTty);
+-  if (bInferiorTty) { // if inferior TTY is specified
+-    // collect launch parameters for alternative SBTarget::Launch method
+-    lldb::SBListener listener = rSessionInfo.GetDebugger().GetListener();
+-    const char *inferiorTty = strInferiorTty.c_str();
+-    CMIUtilString strWkDir;
+-    const bool bWkDir = rSessionInfo.SharedDataRetrieve<CMIUtilString>(
+-        rSessionInfo.m_constStrSharedDataKeyWkDir, strWkDir);
+-    const char *workingDirectory = bWkDir ? strWkDir.c_str() : nullptr;
+-    const uint32_t launchFlags = launchInfo.GetLaunchFlags();
+-    const uint32_t argvNum = launchInfo.GetNumArguments();
+-    std::vector<const char *> argv;
+-    for (uint32_t n = 0; n < argvNum; n++) {
+-      argv.push_back(launchInfo.GetArgumentAtIndex(n));
+-    }
+-    argv.push_back(nullptr);
+-    const uint32_t envpNum = launchInfo.GetNumEnvironmentEntries();
+-    std::vector<const char *> envp;
+-    for (uint32_t n = 0; n < envpNum; n++) {
+-      envp.push_back(launchInfo.GetEnvironmentEntryAtIndex(n));
++  if (bInferiorTty) {
++    // Preserve the target listener and launch settings when redirecting stdio.
++    const char *tty = strInferiorTty.c_str();
++    const char *input = std::getenv("REDPANDA_DEBUG_INPUT_FILE");
++    if (input && *input) {
++      launchInfo.AddOpenFileAction(0, input, true, false);
++      launchInfo.AddOpenFileAction(1, tty, false, true);
++    } else {
++      launchInfo.AddOpenFileAction(0, tty, true, true);
++      launchInfo.AddDuplicateFileAction(0, 1);
+     }
+-    envp.push_back(nullptr);
+-    process = rSessionInfo.GetTarget().Launch(
+-        listener, argv.data(), envp.data(), inferiorTty, inferiorTty,
+-        inferiorTty, workingDirectory, launchFlags, false, error);
+-  } else { // inferior TTY is not specified
+-    process = rSessionInfo.GetTarget().Launch(launchInfo, error);
++    launchInfo.AddDuplicateFileAction(1, 2);
+   }
++  process = rSessionInfo.GetTarget().Launch(launchInfo, error);
+   if (!process.IsValid()) {
+     SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_INVALID_PROCESS),
+                                    m_cmdData.strMiCmd.c_str(),

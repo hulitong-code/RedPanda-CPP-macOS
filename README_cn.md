@@ -1,3 +1,7 @@
+> **Apple Silicon macOS edition:** [Installation and agent instructions](docs/INSTALL_APPLE_SILICON.md).
+> Native GCC/LLDB debugging, GNU headers, Chinese UI, One Dark and red breakpoints.
+> This is an unofficial fork of the upstream project described below.
+
 # RedPanda C++ 
 小熊猫C++ (曾经用过的名称: 小熊猫Dev-C++ 7) 是一款快速、轻量、开源并且跨平台的C/C++/GNU的编译工具。(Assembly IDE).
 

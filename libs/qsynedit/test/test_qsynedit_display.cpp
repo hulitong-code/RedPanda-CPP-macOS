@@ -400,9 +400,9 @@ void TestQSyneditDisplay::test_dnd_undo_restores_content_and_folds()
     QStringList originalTree = foldTree(mEdit.get());
     auto selectTail = [&] {
         int endLine = 1148;
-        mEdit->setCaretAndSelection(CharPos{mEdit->lineText(endLine).length(), endLine},
+        mEdit->setCaretAndSelection(CharPos{static_cast<int>(mEdit->lineText(endLine).length()), endLine},
                                     CharPos{4, 1146},
-                                    CharPos{mEdit->lineText(endLine).length(), endLine});
+                                    CharPos{static_cast<int>(mEdit->lineText(endLine).length()), endLine});
     };
     selectTail();
     QString selected = mEdit->selText();
@@ -1755,7 +1755,7 @@ void TestQSyneditDisplay::test_public_edit_fold_rescan()
     };
 
     run("input", [&] {
-        mEdit->setCaretPos(CharPos{mEdit->lineText(2).length() - 1, 2});
+        mEdit->setCaretPos(CharPos{static_cast<int>(mEdit->lineText(2).length()) - 1, 2});
         mEdit->processCommand(EditCommand::Input, "{");
     });
     run("IME input", [&] {
@@ -1766,11 +1766,11 @@ void TestQSyneditDisplay::test_public_edit_fold_rescan()
         mEdit->processCommand(EditCommand::Input, "{");
     });
     run("delete previous char", [&] {
-        mEdit->setCaretPos(CharPos{mEdit->lineText(2).length(), 2});
+        mEdit->setCaretPos(CharPos{static_cast<int>(mEdit->lineText(2).length()), 2});
         mEdit->processCommand(EditCommand::DeleteLastChar);
     });
     run("delete char", [&] {
-        mEdit->setCaretPos(CharPos{mEdit->lineText(2).length() - 1, 2});
+        mEdit->setCaretPos(CharPos{static_cast<int>(mEdit->lineText(2).length()) - 1, 2});
         mEdit->processCommand(EditCommand::DeleteChar);
     });
     run("delete word", [&] {
@@ -1804,7 +1804,7 @@ void TestQSyneditDisplay::test_public_edit_fold_rescan()
         mEdit->processCommand(EditCommand::ClearAll);
     });
     run("line break", [&] {
-        mEdit->setCaretPos(CharPos{mEdit->lineText(2).length() - 1, 2});
+        mEdit->setCaretPos(CharPos{static_cast<int>(mEdit->lineText(2).length()) - 1, 2});
         mEdit->processCommand(EditCommand::LineBreak);
     });
     run("line break at end", [&] {

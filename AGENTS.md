@@ -139,6 +139,8 @@ PATH="/d/qt/mingw64/bin:/d/qt/qt5-static-64/bin:$PATH" \
 
 打包工作流：`.github/workflows/build.yml`（发行版包）、`build-app.yml`（独立应用）、`feature-matrix.yml`、`winget.yml`。
 
+The macOS packaging script enables Lua and Git integration, deploys Qt with an explicit library search path, and verifies the ad-hoc signature before archiving the application. The local Apple Silicon workflow is documented in `packages/macos/README-local.md`; `build-lldb-mi.sh` builds the pinned patched bridge and `stage-local-tools.sh` stages the Homebrew-backed tools. The local bundle requires Homebrew GCC 15, LLDB and LLVM.
+
 ## 代码风格与约定
 
 - C++17、C11；全面使用 Qt 惯用法（signals/slots、用户可见字符串用 `tr()`、`QObject` 父子对象所有权）。
@@ -173,3 +175,5 @@ PATH="/d/qt/mingw64/bin:/d/qt/qt5-static-64/bin:$PATH" \
 - `BUILD.md`（以及 `BUILD_cn.md`/`BUILD_ru.md`）是权威的构建参考——在自创构建步骤之前请先参考它。
 - `NEWS.md` 是更新日志；查询功能历史时可参考。
 - 当修改了上文描述的任何内容（构建选项、测试命令、目录职责）时，请同步更新本 `AGENTS.md`。
+
+The Apple Silicon end-user installer is `packages/macos/install.sh`. Its installation and acceptance steps are in `docs/INSTALL_APPLE_SILICON.md`. It preserves existing settings; only `seed-settings.py` creates a fresh Chinese/One Dark/GCC profile. `deploy-qt.sh` deploys the native widgets plugins without unrelated Qt modules.

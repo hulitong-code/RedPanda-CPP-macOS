@@ -910,6 +910,20 @@ private:
     QMenu *mMenuRecentFiles;
     QMenu *mMenuRecentProjects;
     QMenu *mMenuNew;
+#ifdef ENABLE_VCS
+    QMenu *mMenuGit;
+    QAction *mActionGit_Create_Repository;
+    QAction *mActionGit_Add_Files;
+    QAction *mActionGit_Commit;
+    QAction *mActionGit_Restore;
+    QAction *mActionGit_Branch;
+    QAction *mActionGit_Merge;
+    QAction *mActionGit_Log;
+    QAction *mActionGit_Remotes;
+    QAction *mActionGit_Fetch;
+    QAction *mActionGit_Pull;
+    QAction *mActionGit_Push;
+#endif
     QMenu *mMenuInsertCodeSnippet;
     QList<QAction *> mMenuEditBackup;
     QList<QAction *> mMenuCodeBackup;

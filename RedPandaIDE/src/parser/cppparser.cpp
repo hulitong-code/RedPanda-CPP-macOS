@@ -160,7 +160,7 @@ void CppParser::internalParse(const QString &fileName)
                     statement->declarationBoundaryAncestor = currentAncestor;
                     statement->declarationRange = SourceRange{
                         token.position,
-                        SourcePosition{token.position.ch + token.text.length() - 1,
+                        SourcePosition{token.position.ch + static_cast<int>(token.text.length()) - 1,
                                        token.position.line}};
                     statement->definitionRange = statement->declarationRange;
                     statement->definitionFileName = currentFile;

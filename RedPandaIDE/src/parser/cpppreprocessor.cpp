@@ -24,8 +24,23 @@
 #include <QMessageBox>
 #include <QMultiHash>
 #include <qt_utils/utils.h>
+#ifdef Q_OS_MACOS
+#include <sys/stat.h>
+#endif
 
 namespace {
+qint64 modificationNanoseconds(const QString &path)
+{
+#ifdef Q_OS_MACOS
+    struct stat info;
+    if (::stat(QFile::encodeName(path).constData(), &info) == 0)
+        return qint64(info.st_mtimespec.tv_sec) * 1000000000LL + info.st_mtimespec.tv_nsec;
+#else
+    Q_UNUSED(path)
+#endif
+    return -1;
+}
+
 struct PreprocessorProfile {
     bool enabled = qEnvironmentVariableIsSet("REDPANDA_PARSER_PROFILE");
     qint64 openIncludeNs = 0;
@@ -182,7 +197,8 @@ bool CppPreprocessor::hasValidFileStamps(const PParsedFileInfo &fileInfo) const
             continue;
         QFileInfo diskInfo(fileName);
         if (!diskInfo.exists() || diskInfo.lastModified() != stamp.lastModified
-                || diskInfo.size() != stamp.size)
+                || diskInfo.size() != stamp.size
+                || modificationNanoseconds(fileName) != stamp.modificationNanoseconds)
             return false;
     }
     return true;
@@ -903,7 +919,8 @@ void CppPreprocessor::openInclude(QString fileName)
             parsedFile->buffer = readFileToLines(fileName);
             QFileInfo diskInfo(fileName);
             mRegistry.fileMetadata.insert(fileName,
-                    Registry::FileMetadata{diskInfo.lastModified(), diskInfo.size()});
+                    Registry::FileMetadata{diskInfo.lastModified(), diskInfo.size(), false,
+                                           modificationNanoseconds(fileName)});
         }
         combineLinesEndingWithBackslash(parsedFile->buffer);
         replaceCommentsBySpaceChar(parsedFile->buffer);

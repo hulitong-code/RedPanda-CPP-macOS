@@ -1,6 +1,7 @@
 #include "test_utils.h"
 #include <QFontDatabase>
 #include <QDebug>
+#include <QtTest>
 
 TokenInfoList parseLine(QSynedit::Syntaxer *syntaxer, const QString &lineText)
 {
@@ -73,8 +74,8 @@ QStringList filterTokens(const QList<TokenInfoList> &infoList, const QSynedit::P
 static bool installTestFonts()
 {
     static bool ok = [](){
-        int mono = QFontDatabase::addApplicationFont("fonts/qsynedit-test-mono.ttf");
-        int prop = QFontDatabase::addApplicationFont("fonts/qsynedit-test-prop.ttf");
+        int mono = QFontDatabase::addApplicationFont(QFINDTESTDATA("fonts/qsynedit-test-mono.ttf"));
+        int prop = QFontDatabase::addApplicationFont(QFINDTESTDATA("fonts/qsynedit-test-prop.ttf"));
         bool result = (mono >= 0 && prop >= 0);
         if (!result)
             qWarning() << "failed to install the bundled test fonts;"

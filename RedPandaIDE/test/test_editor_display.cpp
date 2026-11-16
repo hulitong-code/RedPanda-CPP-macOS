@@ -92,8 +92,8 @@ void TestEditorDisplay::test_dnd_undo_restores_caret()
 
     int beginLine = 1145;
     int endLine = 1147;
-    QSynedit::CharPos begin{mEditor->lineText(beginLine).indexOf("disconnect"), beginLine};
-    QSynedit::CharPos end{mEditor->lineText(endLine).indexOf('}') + 1, endLine};
+    QSynedit::CharPos begin{static_cast<int>(mEditor->lineText(beginLine).indexOf("disconnect")), beginLine};
+    QSynedit::CharPos end{static_cast<int>(mEditor->lineText(endLine).indexOf('}')) + 1, endLine};
     auto dragAndUndo = [&](int targetLine, int targetChar, int topLine,
                            QSynedit::CharPos caret, QSynedit::CharPos selectionAnchor) {
         mEditor->setCaretAndSelection(caret, selectionAnchor, caret);
@@ -147,7 +147,7 @@ void TestEditorDisplay::test_dnd_undo_restores_caret()
     dragAndUndo(targetLine, targetChar, 1130, begin, end);
     dragAndUndo(1122, mEditor->lineText(1122).indexOf("for"), 1116, begin, end);
 
-    QSynedit::CharPos semicolonEnd{mEditor->lineText(1146).indexOf(';') + 1, 1146};
+    QSynedit::CharPos semicolonEnd{static_cast<int>(mEditor->lineText(1146).indexOf(';')) + 1, 1146};
     targetLine = 1137;
     targetChar = mEditor->lineText(targetLine).indexOf("connect");
     dragAndUndo(targetLine, targetChar, 1133, semicolonEnd, begin);

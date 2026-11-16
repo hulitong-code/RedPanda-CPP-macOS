@@ -28,6 +28,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QCoreApplication>
+#include <QStandardPaths>
 #include "src/addon/luaexecutor.h"
 #include "src/addon/luaruntime.h"
 
@@ -1079,6 +1080,21 @@ void CompilerSet::setExecutables()
         mDebugger = findProgramInBinDirs(GDB_PROGRAM);
         mDebugServer = findProgramInBinDirs(GDB_SERVER_PROGRAM);
     }
+#ifdef Q_OS_MACOS
+    // GCC and Clang can both use the bundled LLDB machine interface on macOS.
+    if (mDebugger.isEmpty()) {
+        const QString bundledDebugger = QDir(pSettings->dirs().appLibexecDir())
+                .filePath("lldb/bin/" LLDB_MI_PROGRAM);
+        if (QFileInfo(bundledDebugger).isExecutable())
+            mDebugger = bundledDebugger;
+        else
+            mDebugger = QStandardPaths::findExecutable(LLDB_MI_PROGRAM);
+        if (!mDebugger.isEmpty()) {
+            mDebugServer = QStandardPaths::findExecutable(LLDB_SERVER_PROGRAM,
+                {QFileInfo(mDebugger).absolutePath(), "/opt/homebrew/opt/lldb/bin", "/usr/local/opt/lldb/bin"});
+        }
+    }
+#endif
     if constexpr (MAKE_INTERFACE == MAKE_INTERFACE_mingw32) {
         mMake = findProgramInBinDirs(MAKE_PROGRAM);
     } else {
@@ -1646,7 +1662,8 @@ static void setReleaseOptions(PCompilerSet pSet) {
     pSet->setCompileOption(CC_CMD_OPT_ERROR_IMPLICIT_INT, COMPILER_OPTION_ON);
 //  pSet->setCompileOption(CC_CMD_OPT_ERROR_UNINITIALIZED, COMPILER_OPTION_ON);
     pSet->setCompileOption(CC_CMD_OPT_ERROR_VLA, COMPILER_OPTION_ON);
-    pSet->setStaticLink(true);
+    // Darwin does not ship the startup objects needed for fully static executables.
+    pSet->setStaticLink(!pSet->dumpMachine().contains("-apple-"));
     pSet->setCustomCompileParams("-DNDEBUG");
     pSet->setUseCustomCompileParams(true);
 }

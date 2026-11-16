@@ -504,8 +504,42 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::on_EditorTabsRight_tabCloseRequested);
 
 #ifdef ENABLE_VCS
-    //git menu
-    connect(ui->menuGit, &QMenu::aboutToShow,
+    // Git actions are constructed here alongside the other dynamic menus.
+    mMenuGit = menuBar()->addMenu(tr("Git"));
+    mActionGit_Create_Repository = mMenuGit->addAction(tr("Create Repository"));
+    mActionGit_Create_Repository->setObjectName("actionGit_Create_Repository");
+    connect(mActionGit_Create_Repository, &QAction::triggered, this, &MainWindow::on_actionGit_Create_Repository_triggered);
+    mActionGit_Add_Files = mMenuGit->addAction(tr("Add Files"));
+    mActionGit_Add_Files->setObjectName("actionGit_Add_Files");
+    connect(mActionGit_Add_Files, &QAction::triggered, this, &MainWindow::on_actionGit_Add_Files_triggered);
+    mActionGit_Commit = mMenuGit->addAction(tr("Commit"));
+    mActionGit_Commit->setObjectName("actionGit_Commit");
+    connect(mActionGit_Commit, &QAction::triggered, this, &MainWindow::on_actionGit_Commit_triggered);
+    mActionGit_Restore = mMenuGit->addAction(tr("Restore"));
+    mActionGit_Restore->setObjectName("actionGit_Restore");
+    connect(mActionGit_Restore, &QAction::triggered, this, &MainWindow::on_actionGit_Restore_triggered);
+    mActionGit_Branch = mMenuGit->addAction(tr("Branch"));
+    mActionGit_Branch->setObjectName("actionGit_Branch");
+    connect(mActionGit_Branch, &QAction::triggered, this, &MainWindow::on_actionGit_Branch_triggered);
+    mActionGit_Merge = mMenuGit->addAction(tr("Merge"));
+    mActionGit_Merge->setObjectName("actionGit_Merge");
+    connect(mActionGit_Merge, &QAction::triggered, this, &MainWindow::on_actionGit_Merge_triggered);
+    mActionGit_Log = mMenuGit->addAction(tr("Log"));
+    mActionGit_Log->setObjectName("actionGit_Log");
+    connect(mActionGit_Log, &QAction::triggered, this, &MainWindow::on_actionGit_Log_triggered);
+    mActionGit_Remotes = mMenuGit->addAction(tr("Remotes"));
+    mActionGit_Remotes->setObjectName("actionGit_Remotes");
+    connect(mActionGit_Remotes, &QAction::triggered, this, &MainWindow::on_actionGit_Remotes_triggered);
+    mActionGit_Fetch = mMenuGit->addAction(tr("Fetch"));
+    mActionGit_Fetch->setObjectName("actionGit_Fetch");
+    connect(mActionGit_Fetch, &QAction::triggered, this, &MainWindow::on_actionGit_Fetch_triggered);
+    mActionGit_Pull = mMenuGit->addAction(tr("Pull"));
+    mActionGit_Pull->setObjectName("actionGit_Pull");
+    connect(mActionGit_Pull, &QAction::triggered, this, &MainWindow::on_actionGit_Pull_triggered);
+    mActionGit_Push = mMenuGit->addAction(tr("Push"));
+    mActionGit_Push->setObjectName("actionGit_Push");
+    connect(mActionGit_Push, &QAction::triggered, this, &MainWindow::on_actionGit_Push_triggered);
+    connect(mMenuGit, &QMenu::aboutToShow,
             this, &MainWindow::updateVCSActions);
 #endif
     //set action group name (show in the option / environment / shortcuts)
@@ -1335,14 +1369,14 @@ void MainWindow::onFileSaved(const QString &path, bool inProject)
         if (index.isValid()) {
             if (!inProject) {
                 if ( (isCFile(path) || isHFile(path))
-                        &&  !mFileSystemModelIconProvider.VCSRepository()->isFileInRepository(path)) {
+                        &&  !mFileSystemModelIconProvider->VCSRepository()->isFileInRepository(path)) {
                     QString output;
-                    mFileSystemModelIconProvider.VCSRepository()->add(extractRelativePath(mFileSystemModelIconProvider.VCSRepository()->folder(),path),output);
+                    mFileSystemModelIconProvider->VCSRepository()->add(extractRelativePath(mFileSystemModelIconProvider->VCSRepository()->folder(),path),output);
                 }
             }
 //            qDebug()<<"update icon provider";
-            mFileSystemModelIconProvider.update();
-            mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+            mFileSystemModelIconProvider->update();
+            mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
             ui->treeFiles->update(index);
         }
     }
@@ -4182,8 +4216,8 @@ void MainWindow::onProjectViewContextMenu(const QPoint &pos)
         if (hasRepository) {
             menu.addMenu(&vcsMenu);
         } else {
-            ui->actionGit_Create_Repository->setEnabled(true);
-            menu.addAction(ui->actionGit_Create_Repository);
+            mActionGit_Create_Repository->setEnabled(true);
+            menu.addAction(mActionGit_Create_Repository);
         }
         menu.addSeparator();
     }
@@ -4240,29 +4274,27 @@ void MainWindow::onProjectViewContextMenu(const QPoint &pos)
                 }
             }
             if (shouldAdd)
-                vcsMenu.addAction(ui->actionGit_Add_Files);
+                vcsMenu.addAction(mActionGit_Add_Files);
         }
-        vcsMenu.addAction(ui->actionGit_Remotes);
-        vcsMenu.addAction(ui->actionGit_Log);
-        vcsMenu.addAction(ui->actionGit_Branch);
-        vcsMenu.addAction(ui->actionGit_Merge);
-        vcsMenu.addAction(ui->actionGit_Commit);
-        vcsMenu.addAction(ui->actionGit_Restore);
+        vcsMenu.addAction(mActionGit_Remotes);
+        vcsMenu.addAction(mActionGit_Log);
+        vcsMenu.addAction(mActionGit_Branch);
+        vcsMenu.addAction(mActionGit_Merge);
+        vcsMenu.addAction(mActionGit_Commit);
+        vcsMenu.addAction(mActionGit_Restore);
 
         bool canBranch = false;
         canBranch = !mProject->model()->iconProvider()->VCSRepository()->hasChangedFiles()
                 && !mProject->model()->iconProvider()->VCSRepository()->hasStagedFiles();
-        ui->actionGit_Branch->setEnabled(canBranch);
-        ui->actionGit_Merge->setEnabled(canBranch);
-        ui->actionGit_Commit->setEnabled(true);
-        ui->actionGit_Remotes->setEnabled(true);
-        ui->actionGit_Log->setEnabled(true);
-        ui->actionGit_Restore->setEnabled(true);
+        mActionGit_Branch->setEnabled(canBranch);
+        mActionGit_Merge->setEnabled(canBranch);
+        mActionGit_Commit->setEnabled(true);
+        mActionGit_Remotes->setEnabled(true);
+        mActionGit_Log->setEnabled(true);
+        mActionGit_Restore->setEnabled(true);
 
 //        vcsMenu.addAction(ui->actionGit_Reset);
 //        vcsMenu.addAction(ui->actionGit_Revert);
-//        ui->actionGit_Reset->setEnabled(true);
-//        ui->actionGit_Revert->setEnabled(true);
     }
 #endif
     menu.exec(ui->projectView->mapToGlobal(pos));
@@ -4349,8 +4381,8 @@ void MainWindow::onFilesViewContextMenu(const QPoint &pos)
         if (hasRepository) {
             menu.addMenu(&vcsMenu);
         } else {
-            ui->actionGit_Create_Repository->setEnabled(true);
-            menu.addAction(ui->actionGit_Create_Repository);
+            mActionGit_Create_Repository->setEnabled(true);
+            menu.addAction(mActionGit_Create_Repository);
         }
         menu.addSeparator();
     }
@@ -4373,15 +4405,15 @@ void MainWindow::onFilesViewContextMenu(const QPoint &pos)
 
 #ifdef ENABLE_VCS
     if (pSettings->vcs().gitOk() && hasRepository) {
-        mFileSystemModelIconProvider.update();
+        mFileSystemModelIconProvider->update();
         vcsMenu.setTitle(tr("Version Control"));
         if (ui->treeFiles->selectionModel()->hasSelection()) {
             bool shouldAdd = true;
             foreach (const QModelIndex& index, ui->treeFiles->selectionModel()->selectedRows()) {
-                if (mFileSystemModelIconProvider.VCSRepository()->isFileInRepository(
+                if (mFileSystemModelIconProvider->VCSRepository()->isFileInRepository(
                             mFileSystemModel->fileInfo(index)
                             ) &&
-                        ! mFileSystemModelIconProvider.VCSRepository()->isFileConflicting(
+                        ! mFileSystemModelIconProvider->VCSRepository()->isFileConflicting(
                             mFileSystemModel->fileInfo(index)
                             )
                         ) {
@@ -4390,28 +4422,26 @@ void MainWindow::onFilesViewContextMenu(const QPoint &pos)
                 }
             }
             if (shouldAdd)
-                vcsMenu.addAction(ui->actionGit_Add_Files);
+                vcsMenu.addAction(mActionGit_Add_Files);
         }
-        vcsMenu.addAction(ui->actionGit_Remotes);
-        vcsMenu.addAction(ui->actionGit_Log);
-        vcsMenu.addAction(ui->actionGit_Branch);
-        vcsMenu.addAction(ui->actionGit_Merge);
-        vcsMenu.addAction(ui->actionGit_Commit);
-        vcsMenu.addAction(ui->actionGit_Restore);
+        vcsMenu.addAction(mActionGit_Remotes);
+        vcsMenu.addAction(mActionGit_Log);
+        vcsMenu.addAction(mActionGit_Branch);
+        vcsMenu.addAction(mActionGit_Merge);
+        vcsMenu.addAction(mActionGit_Commit);
+        vcsMenu.addAction(mActionGit_Restore);
 
-        bool canBranch = !mFileSystemModelIconProvider.VCSRepository()->hasChangedFiles()
-                && !mFileSystemModelIconProvider.VCSRepository()->hasStagedFiles();
-        ui->actionGit_Branch->setEnabled(canBranch);
-        ui->actionGit_Merge->setEnabled(canBranch);
-        ui->actionGit_Log->setEnabled(true);
-        ui->actionGit_Remotes->setEnabled(true);
-        ui->actionGit_Commit->setEnabled(true);
-        ui->actionGit_Restore->setEnabled(true);
+        bool canBranch = !mFileSystemModelIconProvider->VCSRepository()->hasChangedFiles()
+                && !mFileSystemModelIconProvider->VCSRepository()->hasStagedFiles();
+        mActionGit_Branch->setEnabled(canBranch);
+        mActionGit_Merge->setEnabled(canBranch);
+        mActionGit_Log->setEnabled(true);
+        mActionGit_Remotes->setEnabled(true);
+        mActionGit_Commit->setEnabled(true);
+        mActionGit_Restore->setEnabled(true);
 
 //        vcsMenu.addAction(ui->actionGit_Reset);
 //        vcsMenu.addAction(ui->actionGit_Revert);
-//        ui->actionGit_Reset->setEnabled(true);
-//        ui->actionGit_Revert->setEnabled(true);
     }
 #endif
     menu.exec(ui->treeFiles->mapToGlobal(pos));
@@ -8445,26 +8475,24 @@ void MainWindow::updateVCSActions()
         canBranch = !mProject->model()->iconProvider()->VCSRepository()->hasChangedFiles()
                 && !mProject->model()->iconProvider()->VCSRepository()->hasStagedFiles();
     } else if (ui->treeFiles->isVisible()) {
-        mFileSystemModelIconProvider.update();
+        mFileSystemModelIconProvider->update();
         QString branch;
-        hasRepository = mFileSystemModelIconProvider.VCSRepository()->hasRepository(branch);
+        hasRepository = mFileSystemModelIconProvider->VCSRepository()->hasRepository(branch);
         shouldEnable = true;
-        canBranch =!mFileSystemModelIconProvider.VCSRepository()->hasChangedFiles()
-                && !mFileSystemModelIconProvider.VCSRepository()->hasStagedFiles();
+        canBranch =!mFileSystemModelIconProvider->VCSRepository()->hasChangedFiles()
+                && !mFileSystemModelIconProvider->VCSRepository()->hasStagedFiles();
     }
 
-    ui->actionGit_Remotes->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Create_Repository->setEnabled(!hasRepository && shouldEnable);
-    ui->actionGit_Push->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Pull->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Fetch->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Log->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Commit->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Branch->setEnabled(hasRepository && shouldEnable && canBranch);
-    ui->actionGit_Merge->setEnabled(hasRepository && shouldEnable && canBranch);
-    ui->actionGit_Reset->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Restore->setEnabled(hasRepository && shouldEnable);
-    ui->actionGit_Revert->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Remotes->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Create_Repository->setEnabled(!hasRepository && shouldEnable);
+    mActionGit_Push->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Pull->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Fetch->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Log->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Commit->setEnabled(hasRepository && shouldEnable);
+    mActionGit_Branch->setEnabled(hasRepository && shouldEnable && canBranch);
+    mActionGit_Merge->setEnabled(hasRepository && shouldEnable && canBranch);
+    mActionGit_Restore->setEnabled(hasRepository && shouldEnable);
 }
 #endif
 
@@ -9733,8 +9761,8 @@ void MainWindow::on_actionGit_Create_Repository_triggered()
         if (pos>=0) {
             ui->cbFilesPath->setItemIcon(pos, mIconsManager->getIcon(IconsManager::FILESYSTEM_GIT));
         }
-        mFileSystemModelIconProvider.setRootFolder(pSettings->environment().currentFolder());
-        mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+        mFileSystemModelIconProvider->setRootFolder(pSettings->environment().currentFolder());
+        mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
         //update project view
         if (mProject && mProject->folder() == mFileSystemModel->rootPath()) {
             mProject->addUnit(includeTrailingPathDelimiter(mProject->folder())+".gitignore", mProject->rootNode());
@@ -9763,8 +9791,8 @@ void MainWindow::on_actionGit_Create_Repository_triggered()
             if (pos>=0) {
                 ui->cbFilesPath->setItemIcon(pos, mIconsManager->getIcon(IconsManager::FILESYSTEM_GIT));
             }
-            mFileSystemModelIconProvider.update();
-            mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+            mFileSystemModelIconProvider->update();
+            mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
         }
     }
 }
@@ -9781,8 +9809,8 @@ void MainWindow::on_actionGit_Add_Files_triggered()
             vcsManager.add(info.absolutePath(),info.fileName(),output);
         }
         //update icons in files view
-        mFileSystemModelIconProvider.update();
-        mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+        mFileSystemModelIconProvider->update();
+        mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
     } else if (ui->projectView->isVisible() && mProject) {
         GitManager vcsManager;
         QModelIndexList indices = ui->projectView->selectionModel()->selectedRows();
@@ -9803,8 +9831,8 @@ void MainWindow::on_actionGit_Add_Files_triggered()
     }
 
     //update icons in files view too
-    mFileSystemModelIconProvider.update();
-    mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+    mFileSystemModelIconProvider->update();
+    mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
 }
 
 
@@ -9856,8 +9884,8 @@ void MainWindow::on_actionGit_Commit_triggered()
             mProject->model()->refreshIcons();
         }
         //update files view
-        mFileSystemModelIconProvider.update();
-        mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+        mFileSystemModelIconProvider->update();
+        mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
     }
     if (!output.isEmpty()) {
         InfoMessageBox infoBox;
@@ -9885,8 +9913,8 @@ void MainWindow::on_actionGit_Restore_triggered()
             mProject->model()->refreshIcons();
         }
         //update files view
-        mFileSystemModelIconProvider.update();
-        mFileSystemModel->setIconProvider(&mFileSystemModelIconProvider);
+        mFileSystemModelIconProvider->update();
+        mFileSystemModel->setIconProvider(mFileSystemModelIconProvider.get());
     }
     if (!output.isEmpty()) {
         InfoMessageBox infoBox;
@@ -9972,7 +10000,7 @@ void MainWindow::on_actionGit_Remotes_triggered()
     }
     if (folder.isEmpty())
         return;
-    GitRemoteDialog dialog(folder);
+    GitRemoteDialog dialog(folder, mIconsManager.get(), this);
     dialog.exec();
 }
 
@@ -10013,7 +10041,7 @@ void MainWindow::on_actionGit_Pull_triggered()
     QString remote = manager.getBranchRemote(folder,branch);
     QString output;
     if (remote.isEmpty()) {
-        GitRemoteDialog dialog(folder);
+        GitRemoteDialog dialog(folder, mIconsManager.get(), this);
         QString remote = dialog.chooseRemote();
         if (remote.trimmed().isEmpty())
             return;
@@ -10048,7 +10076,7 @@ void MainWindow::on_actionGit_Push_triggered()
     QString remote = manager.getBranchRemote(folder,branch);
     QString output;
     if (remote.isEmpty()) {
-        GitRemoteDialog dialog(folder);
+        GitRemoteDialog dialog(folder, mIconsManager.get(), this);
         QString remote = dialog.chooseRemote();
         if (remote.trimmed().isEmpty())
             return;

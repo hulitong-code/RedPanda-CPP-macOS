@@ -236,8 +236,9 @@ void ProjectCompiler::writeMakeDefines(QFile &file, bool &genModuleDef)
     }
     log("");
 
-    QString cxx = extractFileName(compilerSet()->cppCompiler());
-    QString cc = extractFileName(compilerSet()->CCompiler());
+    // Do not let make resolve another toolchain with the same executable name.
+    QString cxx = compilerSet()->cppCompiler();
+    QString cc = compilerSet()->CCompiler();
 #ifdef Q_OS_WIN
     QString windres = extractFileName(compilerSet()->resourceCompiler());
 #endif

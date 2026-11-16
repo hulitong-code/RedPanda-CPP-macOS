@@ -599,14 +599,16 @@ QString GitManager::runGit(const QString& workingFolder, const QStringList &args
     env.insert("LANGUAGE","");
     env.insert("GIT_ASKPASS",includeTrailingPathDelimiter(pSettings->dirs().appLibexecDir())+"redpanda-git-askpass");
 #endif
-    QString output = runAndGetOutput(
+    const ProcessOutput result = runAndGetOutput(
                 fileInfo.absoluteFilePath(),
                 workingFolder,
                 args,
                 "",
                 false,
+                false,
                 env);
-    output = escapeUTF8String(output.toUtf8());
+    QString output = result.errorMessage.isEmpty()
+            ? escapeUTF8String(result.standardOutput) : result.errorMessage;
 //    qDebug()<<output;
     emit gitCmdFinished(output);
 //    if (output.startsWith("fatal:"))

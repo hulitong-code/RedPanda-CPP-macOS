@@ -1,3 +1,7 @@
+> **Apple Silicon macOS edition:** [Installation and agent instructions](docs/INSTALL_APPLE_SILICON.md).
+> Native GCC/LLDB debugging, GNU headers, Chinese UI, One Dark and red breakpoints.
+> This is an unofficial fork of the upstream project described below.
+
 # RedPanda C++
 
 Red Panda C++ (Old name: Red Panda Dev-C++ 7) is an fast ,lightweight, open source, and cross platform C/C++/GNU Assembly IDE.

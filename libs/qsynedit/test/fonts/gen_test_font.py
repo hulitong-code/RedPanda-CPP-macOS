@@ -76,7 +76,7 @@ def build(path, family, width_of):
     metrics.update({name: (width_of[cp], 0) for name, cp in
                     zip(glyph_order[1:], codepoints)})
     fb.setupHorizontalMetrics(metrics)
-    fb.setupHorizontalHeader(ascent=820, descent=204)
+    fb.setupHorizontalHeader(ascent=820, descent=-204)
     fb.setupNameTable({
         "familyName": family,
         "styleName": "Regular",

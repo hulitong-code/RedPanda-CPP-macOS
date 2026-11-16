@@ -62,10 +62,11 @@ void ToolsGitWidget::on_btnTestGit_clicked()
     ui->lblGitInfo->setText("");
     QStringList args;
     args.append("--version");
-    QString output = runAndGetOutput(
-                fileInfo.fileName(),
+    const ProcessOutput output = runAndGetOutput(
+                fileInfo.absoluteFilePath(),
                 fileInfo.absolutePath(),
                 args);
-    ui->lblGitInfo->setText(output);
+    ui->lblGitInfo->setText(output.errorMessage.isEmpty()
+                           ? QString::fromUtf8(output.standardOutput) : output.errorMessage);
 }
 

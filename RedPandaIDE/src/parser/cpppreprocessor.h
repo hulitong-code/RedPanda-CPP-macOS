@@ -351,6 +351,7 @@ private:
             QDateTime lastModified;
             qint64 size = -1;
             bool includeProtected = false;
+            qint64 modificationNanoseconds = -1;
         };
         QHash<QString, PParsedFileInfo> replayRecords;
         QSet<QString> scannedFiles;

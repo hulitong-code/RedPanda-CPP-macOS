@@ -21,6 +21,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -c|--clean)
       _CLEAN=1
+      shift
       ;;
     -h|--help)
       fn_print_help
@@ -64,7 +65,8 @@ function fn_build() {
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$_QT_DIR" \
     -DCMAKE_INSTALL_PREFIX="$_PKG_DIR" \
-    -DCMAKE_OSX_ARCHITECTURES="$arch_info"
+    -DCMAKE_OSX_ARCHITECTURES="$arch_info" \
+    -DLUA_ADDON=ON -DVCS=ON
 
   cmake --build "$_BUILD_DIR" --parallel $(sysctl -n hw.logicalcpu)
 }
@@ -72,9 +74,10 @@ function fn_build() {
 function fn_package() {
   cmake --install "$_BUILD_DIR"
 
-  macdeployqt "$_PKG_DIR/RedPandaIDE.app"
-  tar -C "$_PKG_DIR" -cJf dist/RedPandaIDE-$APP_VERSION.tar.xz RedPandaIDE.app
+  macdeployqt "$_PKG_DIR/RedPandaIDE.app" -libpath="$_QT_DIR/lib"
   codesign --force --deep --sign "-" "$_PKG_DIR/RedPandaIDE.app"
+  codesign --verify --deep --strict "$_PKG_DIR/RedPandaIDE.app"
+  tar -C "$_PKG_DIR" -cJf "dist/RedPandaIDE-$APP_VERSION.tar.xz" RedPandaIDE.app
 }
 
 fn_check_qt_install
