@@ -45,6 +45,7 @@ private slots:
     void test_cppreference_template_syntax();
     void test_cppreference_enum_syntax();
     void test_cppreference_namespace_syntax();
+    void test_using_namespace_variable_types();
     void test_cppreference_lambda_syntax();
     void test_cppreference_structured_binding_syntax();
     void test_cppreference_range_for_syntax();

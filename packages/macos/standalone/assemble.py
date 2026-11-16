@@ -2,6 +2,7 @@
 """Sign the payload, create a native installer and package a local-only DMG."""
 from pathlib import Path
 import hashlib
+import os
 import plistlib
 import shutil
 import subprocess as sp
@@ -18,9 +19,23 @@ output.mkdir(parents=True, exist_ok=True)
 
 def run(*args): sp.run([str(x) for x in args], check=True)
 contents = app / 'Contents'
+# A freshly linked executable still points at the build Mac until Qt deployment.
+main_dependencies = sp.check_output(['otool', '-L', str(contents / 'MacOS/RedPandaIDE')], text=True)
+if '/opt/homebrew/' in main_dependencies:
+    raise RuntimeError('Main executable still depends on Homebrew; deploy Qt before packaging')
 plugin = contents / 'Resources/Toolchain/SharedLibs/liblldbPluginScriptInterpreterPython.dylib'
 if not plugin.is_file():
     raise RuntimeError('Missing LLDB Python plugin discovery entry; container displays would be incorrect')
+# Compiler discovery runs with only the compiler directory in PATH inside the IDE.
+run(sys.executable, root / 'tests/macos/compiler_discovery_smoke.py',
+    contents / 'MacOS/gcc/bin/gcc')
+# Exercise the actual completion model against this payload's standard library.
+widget_test = root / 'build/macos/RedPandaIDE/test-widgets'
+if not widget_test.is_file():
+    raise RuntimeError('Build test-widgets before assembling the standalone DMG')
+test_env = dict(os.environ, QT_QPA_PLATFORM='offscreen',
+                REDPANDA_TEST_GCC=str(contents / 'MacOS/gcc/bin/gcc'))
+sp.run([str(widget_test), 'test_code_completion_bundled_gcc'], env=test_env, check=True)
 # Exercise synthetic children as well as scalar variables before shipping a DMG.
 with tempfile.TemporaryDirectory(prefix='redpanda-dmg-containers-') as directory:
     program = Path(directory) / 'containers_debug'
@@ -42,7 +57,7 @@ resources = installer / 'Contents/Resources'
 (resources.parent / 'MacOS').mkdir(parents=True)
 resources.mkdir()
 run('/usr/bin/clang', '-fobjc-arc', '-framework', 'Cocoa', '-mmacosx-version-min=26.0', root / 'packages/macos/standalone/Installer.m', '-o', installer / 'Contents/MacOS/Installer')
-plist = {'CFBundleExecutable':'Installer', 'CFBundleIdentifier':'net.redpanda-cpp.PrivateInstaller', 'CFBundleName':'Red Panda C++ Installer', 'CFBundleDisplayName':'安装 Red Panda C++', 'CFBundlePackageType':'APPL', 'CFBundleVersion':'1.0.2', 'CFBundleShortVersionString':'1.0.2', 'LSMinimumSystemVersion':'26.0', 'NSHighResolutionCapable':True}
+plist = {'CFBundleExecutable':'Installer', 'CFBundleIdentifier':'net.redpanda-cpp.PrivateInstaller', 'CFBundleName':'Red Panda C++ Installer', 'CFBundleDisplayName':'安装 Red Panda C++', 'CFBundlePackageType':'APPL', 'CFBundleVersion':'1.0.3', 'CFBundleShortVersionString':'1.0.3', 'LSMinimumSystemVersion':'26.0', 'NSHighResolutionCapable':True}
 icons = list((contents / 'Resources').glob('*.icns'))
 if icons:
     shutil.copy2(icons[0], resources / 'Installer.icns')
@@ -106,7 +121,7 @@ examples = work / 'Examples'
 examples.mkdir()
 for name in ('mi_input.cpp', 'bits_debug.cpp'):
     shutil.copy2(root / 'tests/macos' / name, examples / name)
-dmg = output / 'RedPanda-CPP-AppleSilicon-Private-20261116-r3.dmg'
+dmg = output / 'RedPanda-CPP-AppleSilicon-Private-20261116-r4.dmg'
 if dmg.exists(): raise RuntimeError(f'Refusing to overwrite {dmg}')
 run('hdiutil', 'create', '-volname', 'Red Panda C++ Installer', '-srcfolder', work, '-format', 'UDZO', '-ov', dmg)
 digest = hashlib.file_digest(dmg.open('rb'), 'sha256').hexdigest()

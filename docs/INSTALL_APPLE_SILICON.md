@@ -11,7 +11,7 @@ The initial upstream snapshot is `5579eaf`; the LLDB-MI bridge is pinned to
 - Or clone `master` using the command below. This includes the latest breakpoint
   fixes; the older `macos-v1.0.1` source release predates them.
 - **There is no public standalone DMG download at present.** The locally built
-  r3 image includes locally licensed Apple SDK/developer tools and is reserved for
+  r4 image includes locally licensed Apple SDK/developer tools and is reserved for
   the owner's controlled Macs. It is not a public GitHub release asset.
 - That private image targets Apple Silicon and macOS 26+, includes its C/C++
   toolchain, and is ad-hoc signed but not notarized. Its requirements differ from
@@ -20,7 +20,7 @@ The initial upstream snapshot is `5579eaf`; the LLDB-MI bridge is pinned to
 
 ## Why the standalone DMG is not publicly available
 
-The private r3 image contains Apple SDK/developer tools copied from the
+The private r4 image contains Apple SDK/developer tools copied from the
 maintainer's licensed local installation. [Section 2.7 of Apple's Xcode and Apple
 SDKs Agreement](https://www.apple.com/legal/sla/docs/xcode.pdf) restricts uploading,
 hosting, and redistributing Apple Software without express permission, subject

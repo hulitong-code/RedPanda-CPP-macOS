@@ -52,8 +52,8 @@ void materializeTemplateArguments(TypeInfo &type)
 }
 }
 
-CppTypeResolver::CppTypeResolver(const StatementModel &model)
-    : mModel(model)
+CppTypeResolver::CppTypeResolver(const StatementModel &model, const QSet<QString> &fileUsings)
+    : mModel(model), mFileUsings(fileUsings)
 {
 }
 
@@ -350,10 +350,51 @@ PStatement CppTypeResolver::findDeclaration(const QString &qualifiedName,
         } else if (PStatement current = findMember(searchScope, parts.first())) {
             return findDeclarationRemainder(current, parts);
         }
+        QSet<QString> visited;
+        if (PStatement imported = findImportedDeclaration(searchScope->usingList, parts,
+                                                          searchScope, visited))
+            return imported;
         searchScope = searchScope->parentScope.lock();
     }
     bool firstPartFound = false;
-    return findInNamespaceScope({}, parts, firstPartFound);
+    PStatement result = findInNamespaceScope({}, parts, firstPartFound);
+    if (result || firstPartFound)
+        return result;
+    QSet<QString> visited;
+    return findImportedDeclaration(mFileUsings, parts, {}, visited);
+}
+
+PStatement CppTypeResolver::findImportedDeclaration(
+        const QSet<QString> &usings, const QStringList &parts,
+        const PStatement &context, QSet<QString> &visited) const
+{
+    for (const QString &usingName : usings) {
+        QList<PStatement> namespaces;
+        PStatement scope = context;
+        while (scope && namespaces.isEmpty()) {
+            if (scope->kind == StatementKind::Namespace)
+                namespaces = mModel.namespaceStatements(scope->fullName + "::" + usingName);
+            scope = scope->parentScope.lock();
+        }
+        if (namespaces.isEmpty())
+            namespaces = mModel.namespaceStatements(usingName);
+        for (const PStatement &nameSpace : namespaces) {
+            // Namespace imports can be transitive or cyclic.
+            const QString key = nameSpace->fullName;
+            if (visited.contains(key))
+                continue;
+            visited.insert(key);
+            bool firstPartFound = false;
+            if (PStatement result = findInNamespaceScope(nameSpace, parts, firstPartFound))
+                return result;
+            QSet<QString> nestedUsings;
+            for (const PStatement &part : mModel.namespaceStatements(key))
+                nestedUsings.unite(part->usingList);
+            if (PStatement result = findImportedDeclaration(nestedUsings, parts, nameSpace, visited))
+                return result;
+        }
+    }
+    return {};
 }
 
 PStatement CppTypeResolver::findInNamespaceScope(const PStatement &scope,

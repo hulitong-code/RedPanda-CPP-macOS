@@ -746,8 +746,8 @@ EvalResult CppParser::evalExpression(const QString &fileName, QStringList &expre
 EvalResult CppParser::doEvalExpression(const QString &fileName, QStringList &expression,
                                        const PStatement &currentScope) const
 {
-    Q_UNUSED(fileName);
-    CppTypeResolver resolver(mStatementList);
+    PParsedFileInfo info = mPreprocessor.findFileInfo(fileName);
+    CppTypeResolver resolver(mStatementList, info ? info->usings() : QSet<QString>());
     TypeOperationRegistry operations(resolver);
     CppExpressionEvaluator evaluator(mStatementList, resolver, operations);
     CppTokenizer tokenizer;
@@ -758,23 +758,23 @@ EvalResult CppParser::doEvalExpression(const QString &fileName, QStringList &exp
 PStatement CppParser::findTypeDefinitionOf(const QString &fileName, const QString &typeName,
                                            const PStatement &currentClass) const
 {
-    Q_UNUSED(fileName);
     QMutexLocker locker(&mMutex);
     if (mParsing)
         return nullptr;
-    CppTypeResolver resolver(mStatementList);
+    PParsedFileInfo info = mPreprocessor.findFileInfo(fileName);
+    CppTypeResolver resolver(mStatementList, info ? info->usings() : QSet<QString>());
     return resolver.resolve(parseTypeInfo(typeName), {}, currentClass).declaration.lock();
 }
 
 PStatement CppParser::findTypeDef(const PStatement &statement, const QString &fileName) const
 {
-    Q_UNUSED(fileName);
     QMutexLocker locker(&mMutex);
     if (mParsing)
         return nullptr;
     if (!statement)
         return {};
-    CppTypeResolver resolver(mStatementList);
+    PParsedFileInfo info = mPreprocessor.findFileInfo(fileName);
+    CppTypeResolver resolver(mStatementList, info ? info->usings() : QSet<QString>());
     return resolver.resolve(statement->typeInfo, {}, statement->parentScope.lock()).declaration.lock();
 }
 

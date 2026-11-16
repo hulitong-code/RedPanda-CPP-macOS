@@ -37,7 +37,7 @@ struct EvalResult {
 class CppTypeResolver
 {
 public:
-    explicit CppTypeResolver(const StatementModel &model);
+    explicit CppTypeResolver(const StatementModel &model, const QSet<QString> &fileUsings = {});
 
     TypeInfo resolve(const TypeInfo &type, const TemplateBindings &bindings = {},
                      const PStatement &context = {}) const;
@@ -77,7 +77,10 @@ private:
     TemplateBindings declarationBindings(const PStatement &declaration, const TypeInfo &instance,
                                          const TemplateBindings &outerBindings) const;
 
+    PStatement findImportedDeclaration(const QSet<QString> &usings, const QStringList &parts,
+                                        const PStatement &context, QSet<QString> &visited) const;
     const StatementModel &mModel;
+    QSet<QString> mFileUsings;
 };
 
 #endif // CPPTYPERESOLVER_H

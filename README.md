@@ -7,7 +7,7 @@
 > The current `master` includes the gutter breakpoint fix. The standalone packaging
 > scripts also include the LLDB container-display fix and acceptance tests.
 >
-> **Standalone DMG status:** the r3 DMG is a local private-use package containing
+> **Standalone DMG status:** the r4 DMG is a local private-use package containing
 > locally licensed Apple SDK/developer tools. It has **not been uploaded** as a
 > public release, so there is currently **no public DMG download link**.
 > **Why no public DMG?** This image bundles Apple SDK/developer tools whose
@@ -17,7 +17,7 @@
 > **Need an installation package?** Email the maintainer at
 > [hulitong1023@163.com](mailto:hulitong1023@163.com) to ask about available packages
 > and installation help. Any package provided must comply with its components'
-> redistribution licenses; this is not an offer to distribute the private r3 image.
+> redistribution licenses; this is not an offer to distribute the private r4 image.
 >
 > See [download options and requirements](docs/INSTALL_APPLE_SILICON.md#download-options).
 

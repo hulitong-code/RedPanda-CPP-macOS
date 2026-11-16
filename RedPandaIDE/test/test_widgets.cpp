@@ -30,6 +30,7 @@
 #include "src/mainwindow.h"
 #include "src/project.h"
 #include "src/settings.h"
+#include "src/settings/compilersetsettings.h"
 #include "src/widgets/classbrowser.h"
 #include "src/widgets/codecompletionpopup.h"
 #include "src/widgets/searchresultview.h"
@@ -174,10 +175,12 @@ TestWidgets::~TestWidgets() = default;
 
 void TestWidgets::initTestCase()
 {
+    initParser();
     mSettings = std::make_unique<Settings>("test-widgets.ini");
     pSettings = mSettings.get();
     pSettings->dirs().load();
     pSettings->ui().load();
+    pSettings->editor().load();
     pSettings->codeCompletion().load();
     mColorManager = std::make_unique<ColorManager>(&pSettings->dirs());
 }
@@ -228,6 +231,62 @@ void TestWidgets::init()
     });
     mParser->addProjectFile(mMainFile, false);
     CppParser::parseFileBlocking(mParser, mMainFile, false, "");
+}
+
+void TestWidgets::test_code_completion_bundled_gcc_data()
+{
+    QTest::addColumn<QString>("header");
+    QTest::addColumn<QString>("globalUsing");
+    QTest::addColumn<QString>("localUsing");
+    QTest::addColumn<QString>("type");
+    for (const QString &header : {QString("vector"), QString("bits/stdc++.h")}) {
+        QTest::newRow(qPrintable(header + "-qualified")) << header << "" << "" << "std::vector<int>";
+        QTest::newRow(qPrintable(header + "-global-using")) << header << "using namespace std;" << "" << "vector<int>";
+        QTest::newRow(qPrintable(header + "-local-using")) << header << "" << "using namespace std;" << "vector<int>";
+        QTest::newRow(qPrintable(header + "-nested-vector")) << header << "using namespace std;" << "" << "vector<vector<int>>";
+    }
+}
+
+void TestWidgets::test_code_completion_bundled_gcc()
+{
+    QFETCH(QString, header);
+    QFETCH(QString, globalUsing);
+    QFETCH(QString, localUsing);
+    QFETCH(QString, type);
+    const QString compiler = qEnvironmentVariable("REDPANDA_TEST_GCC");
+    if (compiler.isEmpty())
+        QSKIP("Set REDPANDA_TEST_GCC to test a packaged compiler");
+    CompilerSet set;
+    set.setCompilerType(CompilerType::GCC);
+    set.setCCompiler(compiler);
+    set.setUseCustomCompileParams(true);
+    set.setCustomCompileParams("-std=c++17 -g -O0");
+    set.binDirs().append(QFileInfo(compiler).absolutePath());
+    mParser = std::make_shared<CppParser>();
+    for (const QString &path : set.defaultCppIncludeDirs())
+        mParser->addIncludePath(path);
+    QVERIFY(!set.defaultCppIncludeDirs().isEmpty());
+    for (const QString &define : set.defines(true))
+        mParser->addHardDefineByLine(define);
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString main = tmp.filePath("vector.cpp");
+    QFile file(main);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write(QString("#include <%1>\n%2 int main() { %3\n"
+                       "    %4 numbers;\n    numbers.\n}\n")
+                   .arg(header, globalUsing, localUsing, type).toUtf8());
+    file.close();
+    CppParser::parseFileBlocking(mParser, main, false, "");
+    QVERIFY(mParser->findStatement("std::vector"));
+    CodeCompletionPopup popup(mColorManager.get(), nullptr);
+    popup.setParser(mParser);
+    const QSet<QString> names = completionNames(popup, "numbers", main,
+        CodeCompletionType::Normal, {}, {}, {}, 3, ".", {});
+    for (const QString &name : {QString("size"), QString("push_back"),
+                               QString("clear"), QString("begin"), QString("end")})
+        QVERIFY2(names.contains(name), qPrintable(name));
+
 }
 
 void TestWidgets::test_code_completion_inherited_access()

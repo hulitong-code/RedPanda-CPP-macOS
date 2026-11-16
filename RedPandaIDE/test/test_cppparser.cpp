@@ -1101,6 +1101,33 @@ void TestCppParser::test_cppreference_enum_syntax()
     QCOMPARE(mParser->findStatement("f")->value, "3");
 }
 
+void TestCppParser::test_using_namespace_variable_types()
+{
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString main = tmp.filePath("using.cpp");
+    QVERIFY(writeLines(main, {
+        "namespace A { struct Box { int value; }; }",
+        "namespace B { using namespace A; }",
+        "namespace A { using namespace B; }",
+        "using namespace B;",
+        "Box global;",
+        "void f() { using namespace A; Box local; }",
+        "namespace C { struct Box { int own; }; void f() { Box shadow; } }",
+    }));
+    CppParser::parseFileBlocking(mParser, main, true, "");
+    QVERIFY(mParser->findStatementOf(main, "global.value", 4));
+    QVERIFY(mParser->findStatementOf(main, "local.value", 5));
+    QVERIFY(mParser->findStatementOf(main, "shadow.own", 6));
+    QVERIFY(!mParser->findStatementOf(main, "shadow.value", 6));
+    QVERIFY(!mParser->findTypeDefinitionOf(main, "Missing", {}));
+    // A directive in one source file must not leak to a different source file.
+    const QString other = tmp.filePath("other.cpp");
+    QVERIFY(writeLines(other, {"Box unimported;"}));
+    CppParser::parseFileBlocking(mParser, other, true, "");
+    QVERIFY(!mParser->findStatementOf(other, "unimported.value", 0));
+}
+
 void TestCppParser::test_cppreference_namespace_syntax()
 {
     parseSyntaxResource(mParser, "namespaces.cpp");

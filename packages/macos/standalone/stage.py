@@ -60,15 +60,15 @@ def script(path, content):
     path.write_text('#!/bin/sh\nset -eu\n' + content)
     path.chmod(0o755)
 
-script(mac / 'apple/bin/as', 'dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$dir/clang" -x assembler -c "$@"\n')
+script(mac / 'apple/bin/as', 'dir=$(CDPATH= cd -- "$(/usr/bin/dirname -- "$0")" && pwd)\nexec "$dir/clang" -x assembler -c "$@"\n')
 for name in ('gcc', 'g++'):
-    script(mac / 'gcc/bin' / name, '''dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+    script(mac / 'gcc/bin' / name, '''dir=$(CDPATH= cd -- "$(/usr/bin/dirname -- "$0")" && pwd)
 root=$(CDPATH= cd -- "$dir/../.." && pwd)
 export SDKROOT="$root/SDK"
 export PATH="$root/apple/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 exec "$dir/NAME-15" -B"$root/apple/bin/" -isysroot "$root/SDK" -Wl,-rpath,"$root/gcc/lib/gcc/15" "$@"
 '''.replace('NAME', name))
-script(mac / 'lldb/bin/lldb-mi', '''dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script(mac / 'lldb/bin/lldb-mi', '''dir=$(CDPATH= cd -- "$(/usr/bin/dirname -- "$0")" && pwd)
 root=$(CDPATH= cd -- "$dir/../.." && pwd)
 export LLDB_DEBUGSERVER_PATH="$dir/debugserver"
 export LLDB_ARGDUMPER_PATH="$dir/lldb-argdumper"
@@ -78,7 +78,7 @@ export PYTHONPATH="$root/python-lldb"
 export PYTHONDONTWRITEBYTECODE=1
 exec "$dir/lldb-mi.real" "$@"
 ''')
-script(mac / 'make/bin/make', 'dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)\nexport PATH="$dir/gcc/bin:$dir/apple/bin:/usr/bin:/bin:/usr/sbin:/sbin"\nexec "$dir/apple/bin/make" "$@"\n')
+script(mac / 'make/bin/make', 'dir=$(CDPATH= cd -- "$(/usr/bin/dirname -- "$0")/../.." && pwd)\nexport PATH="$dir/gcc/bin:$dir/apple/bin:/usr/bin:/bin:/usr/sbin:/sbin"\nexec "$dir/apple/bin/make" "$@"\n')
 
 magic = {b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe', b'\xca\xfe\xba\xbe', b'\xca\xfe\xba\xbf'}
 def macho(path):

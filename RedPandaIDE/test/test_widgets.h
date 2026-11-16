@@ -35,6 +35,8 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
     void init();
+    void test_code_completion_bundled_gcc_data();
+    void test_code_completion_bundled_gcc();
     void test_code_completion_inherited_access();
     void test_code_completion_complex_keyword();
     void test_code_completion_labels();

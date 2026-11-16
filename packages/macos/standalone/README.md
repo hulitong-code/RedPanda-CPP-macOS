@@ -43,3 +43,15 @@ Python synthetic children and can incorrectly show nonempty vectors as size=0.
 container acceptance test before creating the DMG. The build Mac must already
 permit local debugging. Coverage includes empty/int/string/bool/nested vectors,
 child values, watch updates after growth/clear, and list/map/set summaries.
+
+The packaging gate also probes C/C++ include paths and predefined macros with
+only the compiler directory in PATH, matching IDE compiler discovery. Wrappers
+use the absolute system dirname path so discovery does not depend on the caller's
+working directory. To exercise real standard-library member completion, run
+`test-widgets test_code_completion_bundled_gcc` with `REDPANDA_TEST_GCC` pointing
+to the bundled `Contents/MacOS/gcc/bin/gcc` and `QT_QPA_PLATFORM=offscreen`.
+
+Build `test-widgets` in `build/macos` before assembling the DMG. The assembler
+runs its standard-library completion test against the staged compiler, covering
+`<vector>` and `<bits/stdc++.h>`, qualified names, global/function-local using
+directives, and nested vectors.

@@ -1,5 +1,9 @@
 Red Panda C++ Version 3.6
 
+  - fix: Resolve variable types through using-namespace directives so unqualified vector declarations offer member completion.
+
+  - fix: Make bundled tool wrappers independent of PATH and the caller's working directory during compiler discovery.
+
   - fix: Load the bundled LLDB Python interpreter so GNU containers show their real sizes and elements in local variables and watches.
 
   - fix: Restore breakpoint clicks in the gutter icon margin while preserving line-number selection and code folding.
