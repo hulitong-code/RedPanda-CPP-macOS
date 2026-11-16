@@ -59,6 +59,8 @@ private slots:
     void test_function_tip_class();
     void test_rename_class_and_constructor();
     void test_rename_from_constructor();
+    void test_terminal_wrapper_cds_to_working_directory();
+    void test_terminal_wrapper_without_working_directory();
 
 private:
     std::unique_ptr<Settings> mSettings;

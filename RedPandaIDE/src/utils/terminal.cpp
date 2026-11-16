@@ -23,7 +23,20 @@
 #include "../settings/environmentsettings.h"
 #include <qt_utils/utils.h>
 
-std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandForTerminalEmulator(const QString &terminal, const QStringList &argsPattern, const QStringList &payloadArgsWithArgv0, DirSettings *dirSettings)
+/* A terminal emulator opens a shell of its own, which starts in the user's home
+ * directory: the working directory set on the QProcess that launches the
+ * terminal is not inherited by that shell. Without an explicit cd, a relative
+ * path used by the program (freopen("in.txt"), for example) resolves against
+ * $HOME instead of the program's working directory. */
+static void writeWorkingDirectoryCommand(QTemporaryFile *file, const QString &workingDir)
+{
+    if (workingDir.isEmpty())
+        return;
+    QString escaped = escapeArgument(workingDir, false, EscapeArgumentRule::BourneAgainShellPretty);
+    file->write(QString("cd -- %1\n").arg(escaped).toUtf8());
+}
+
+std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandForTerminalEmulator(const QString &terminal, const QStringList &argsPattern, const QStringList &payloadArgsWithArgv0, DirSettings *dirSettings, const QString &workingDir)
 {
     QStringList wrappedArgs;
     std::unique_ptr<QTemporaryFile> temproryFile;
@@ -69,6 +82,7 @@ std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandFor
                     auto escaped = escapeArgument(arg, i == 0, EscapeArgumentRule::BourneAgainShellPretty);
                     escapedArgs.append(escaped);
                 }
+                writeWorkingDirectoryCommand(temproryFile.get(), workingDir);
                 temproryFile->write(escapedArgs.join(' ').toUtf8());
                 temproryFile->write("\n");
                 QFile(temproryFile->fileName()).setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
@@ -84,6 +98,7 @@ std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandFor
                     escapedArgs.append(escaped);
                 }
                 temproryFile->write("#!/bin/sh\n");
+                writeWorkingDirectoryCommand(temproryFile.get(), workingDir);
                 temproryFile->write(escapedArgs.join(' ').toUtf8());
                 temproryFile->write("\n");
                 QFile(temproryFile->fileName()).setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
@@ -116,7 +131,7 @@ std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandFor
     return {wrappedArgs[0], wrappedArgs.mid(1), std::make_unique<NonExclusiveTemporaryFileOwner>(temproryFile)};
 }
 
-std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandForTerminalEmulator(const QString &terminal, const QString &argsPattern, const QStringList &payloadArgsWithArgv0, DirSettings *dirSettings)
+std::tuple<QString, QStringList, PNonExclusiveTemporaryFileOwner> wrapCommandForTerminalEmulator(const QString &terminal, const QString &argsPattern, const QStringList &payloadArgsWithArgv0, DirSettings *dirSettings, const QString &workingDir)
 {
-    return wrapCommandForTerminalEmulator(terminal, parseArguments(argsPattern, EnvironmentSettings::terminalArgsPatternMagicVariables(), false), payloadArgsWithArgv0, dirSettings);
+    return wrapCommandForTerminalEmulator(terminal, parseArguments(argsPattern, EnvironmentSettings::terminalArgsPatternMagicVariables(), false), payloadArgsWithArgv0, dirSettings, workingDir);
 }

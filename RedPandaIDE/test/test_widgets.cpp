@@ -36,6 +36,10 @@
 #include <qsynedit/formatter/cppformatter.h>
 #include <qsynedit/syntaxer/cpp.h>
 
+#include "src/utils/terminal.h"
+#include <QFile>
+#include <QTemporaryDir>
+
 IconsManager *MainWindow::iconsManager() const
 {
     return nullptr;
@@ -804,4 +808,49 @@ void TestWidgets::test_rename_from_constructor()
     CppRefacter refactor(nullptr);
     refactor.renameSymbol(&editor, constructorPos, "Bar");
     QCOMPARE(editor.content(), expectedContent);
+}
+
+// The terminal emulator opens a shell of its own, which does not inherit the
+// working directory set on the process that launched it. Without an explicit
+// cd, a program that opens a relative path (freopen("in.txt"), fstream) looks
+// in the user's home directory instead of next to the source file.
+void TestWidgets::test_terminal_wrapper_cds_to_working_directory()
+{
+    QTemporaryDir workDir;
+    QVERIFY(workDir.isValid());
+    auto result = wrapCommandForTerminalEmulator(
+        QStringLiteral("/bin/echo"),
+        QStringList{QStringLiteral("$term"), QStringLiteral("$tmpfile")},
+        QStringList{QStringLiteral("./program"), QStringLiteral("arg with space")},
+        nullptr,
+        workDir.path());
+    const QString &cmd = std::get<0>(result);
+    const QStringList &args = std::get<1>(result);
+    QCOMPARE(cmd, QStringLiteral("/bin/echo"));
+    QCOMPARE(args.size(), 1);
+    QFile script(args.first());
+    QVERIFY(script.open(QIODevice::ReadOnly));
+    const QString content = QString::fromUtf8(script.readAll());
+    QVERIFY2(content.startsWith(QStringLiteral("cd -- ")), qPrintable(content));
+    QVERIFY2(content.contains(workDir.path()), qPrintable(content));
+    QVERIFY2(content.contains(QStringLiteral("./program")), qPrintable(content));
+    QVERIFY2(content.indexOf(QStringLiteral("cd -- "))
+                 < content.indexOf(QStringLiteral("./program")),
+             qPrintable(content));
+}
+
+void TestWidgets::test_terminal_wrapper_without_working_directory()
+{
+    auto result = wrapCommandForTerminalEmulator(
+        QStringLiteral("/bin/echo"),
+        QStringList{QStringLiteral("$term"), QStringLiteral("$tmpfile")},
+        QStringList{QStringLiteral("./program")},
+        nullptr,
+        QString());
+    const QStringList &args = std::get<1>(result);
+    QCOMPARE(args.size(), 1);
+    QFile script(args.first());
+    QVERIFY(script.open(QIODevice::ReadOnly));
+    const QString content = QString::fromUtf8(script.readAll());
+    QVERIFY2(!content.contains(QStringLiteral("cd -- ")), qPrintable(content));
 }

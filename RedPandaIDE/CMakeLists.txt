@@ -378,6 +378,7 @@ target_qt_plain_cpp(test-widgets
     src/utils/parsearg
     src/utils/parsemacros
     src/utils/pe
+    src/utils/terminal
     src/utils/ui
 
     src/compiler/runner

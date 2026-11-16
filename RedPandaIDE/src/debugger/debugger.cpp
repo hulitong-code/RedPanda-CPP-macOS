@@ -1290,7 +1290,8 @@ void DebugTarget::run()
             pSettings->environment().terminalPath(),
             pSettings->environment().terminalArgumentsPattern(),
             execArgs,
-            &pSettings->dirs()
+            &pSettings->dirs(),
+            QFileInfo(mInferior).path()
         );
     } else {
         cmd = execArgs[0];
@@ -1301,7 +1302,8 @@ void DebugTarget::run()
         pSettings->environment().terminalPath(),
         pSettings->environment().terminalArgumentsPattern(),
         execArgs,
-        &pSettings->dirs()
+        &pSettings->dirs(),
+        QFileInfo(mInferior).path()
     );
 #endif
     QString workingDir = QFileInfo(mInferior).path();

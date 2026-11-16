@@ -322,7 +322,8 @@ void CompilerManager::run(
                 pSettings->environment().terminalPath(),
                 pSettings->environment().terminalArgumentsPattern(),
                 execArgs,
-                &pSettings->dirs()
+                &pSettings->dirs(),
+                workDir
             );
             //delete when thread finished
             execRunner = new ExecutableRunner(wrappedFilename, args, workDir);

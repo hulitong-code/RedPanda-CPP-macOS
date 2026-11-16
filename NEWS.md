@@ -14,6 +14,8 @@ Red Panda C++ Version 3.6
 
   - fix: Use a native terminal with LLDB-MI on macOS instead of the unsupported lldb-server gdbserver mode.
 
+  - fix: Start programs in the macOS terminal with the program's working directory, so relative paths such as freopen("in.txt") resolve next to the source file instead of the home directory.
+
   - fix: Build the editor and parser with Qt 6 and Apple Clang without narrowing conversion errors.
   - fix: Correct settings types and header lookup when Git integration is enabled.
   - fix: Restore Git menus and adapt Git commands to the current process API.
