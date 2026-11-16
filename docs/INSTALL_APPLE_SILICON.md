@@ -5,6 +5,19 @@ Upstream: https://github.com/royqh1979/RedPanda-CPP (GPL-3.0-or-later).
 The initial upstream snapshot is `5579eaf`; the LLDB-MI bridge is pinned to
 `66d422a572e06a3a904ce9a128f23125c62805e3` with the patch in `packages/macos/patches`.
 
+## Download options
+
+- **[Download the current source ZIP](https://github.com/hulitong-code/RedPanda-CPP-macOS/archive/refs/heads/master.zip)**, extract it, then follow the source-build steps below.
+- Or clone `master` using the command below. This includes the latest breakpoint
+  fixes; the older `macos-v1.0.1` source release predates them.
+- **There is no public standalone DMG download at present.** The locally built
+  r3 image includes locally licensed Apple SDK/developer tools and is reserved for
+  the owner's controlled Macs. It is not a public GitHub release asset.
+- That private image targets Apple Silicon and macOS 26+, includes its C/C++
+  toolchain, and is ad-hoc signed but not notarized. Its requirements differ from
+  the public source installer described here. Do not confuse GitHub's automatic
+  source ZIP archives with a prebuilt application.
+
 ## Requirements
 
 - Apple Silicon Mac, running a macOS release supported by Homebrew and Qt 6.
@@ -23,7 +36,7 @@ an unrelated Mac and assume its linked LLDB/LLVM libraries are compatible.
 
 ```sh
 mkdir -p "$HOME/Developer"
-git clone --branch macos-v1.0.1 --depth 1 \
+git clone --branch master --depth 1 \
   https://github.com/hulitong-code/RedPanda-CPP-macOS.git \
   "$HOME/Developer/RedPanda-CPP-macOS"
 cd "$HOME/Developer/RedPanda-CPP-macOS"

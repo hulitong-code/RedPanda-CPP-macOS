@@ -1,6 +1,21 @@
-> **Apple Silicon macOS edition:** [Installation and agent instructions](docs/INSTALL_APPLE_SILICON.md).
-> Native GCC/LLDB debugging, GNU headers, Chinese UI, One Dark and red breakpoints.
-> This is an unofficial fork of the upstream project described below.
+# Apple Silicon macOS — Download & Install
+
+**[⬇ Download the current macOS source ZIP](https://github.com/hulitong-code/RedPanda-CPP-macOS/archive/refs/heads/master.zip)** · **[Installation guide / Agent instructions](docs/INSTALL_APPLE_SILICON.md)**
+
+> **Public download: source code, not a ready-to-run DMG.** Build and install with
+> `packages/macos/install.sh`; Homebrew and Apple Command Line Tools are required.
+> The current `master` includes the gutter breakpoint fix. The standalone packaging
+> scripts also include the LLDB container-display fix and acceptance tests.
+>
+> **Standalone DMG status:** the r3 DMG is a local private-use package containing
+> locally licensed Apple SDK/developer tools. It has **not been uploaded** as a
+> public release, so there is currently **no public DMG download link**.
+> See [download options and requirements](docs/INSTALL_APPLE_SILICON.md#download-options).
+
+Native GCC/LLDB debugging, `<bits/stdc++.h>`, Chinese UI, One Dark and red breakpoints.
+This is an unofficial macOS fork; the upstream project is described below.
+
+---
 
 # RedPanda C++ 
 小熊猫C++ (曾经用过的名称: 小熊猫Dev-C++ 7) 是一款快速、轻量、开源并且跨平台的C/C++/GNU的编译工具。(Assembly IDE).
