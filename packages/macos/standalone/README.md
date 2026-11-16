@@ -35,3 +35,11 @@ sandbox denying reads from `/opt/homebrew`, `/Library/Developer` and
 `/Applications/Xcode.app`, including after moving the app to a path with spaces.
 This is an isolation test on the build Mac, not a substitute for testing on a
 second clean Mac or verifying compatibility with older macOS versions.
+
+The unversioned `liblldbPluginScriptInterpreterPython.dylib` discovery alias must
+be present next to liblldb; shipping only its versioned target silently disables
+Python synthetic children and can incorrectly show nonempty vectors as size=0.
+`assemble.py` now refuses to package a missing plugin entry and runs the MI
+container acceptance test before creating the DMG. The build Mac must already
+permit local debugging. Coverage includes empty/int/string/bool/nested vectors,
+child values, watch updates after growth/clear, and list/map/set summaries.

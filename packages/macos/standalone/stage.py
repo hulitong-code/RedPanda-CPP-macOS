@@ -43,6 +43,8 @@ copy('/opt/homebrew/opt/python@3.15/Frameworks/Python.framework/Versions/3.15', 
 (mac / 'python/lib/python3.15/site-packages').mkdir()
 copy('/opt/homebrew/opt/lldb/lib/python3.15/site-packages', mac / 'python-lldb')
 copy('/opt/homebrew/opt/lldb/lib/liblldbPluginScriptInterpreterPython.23.1.dylib', mac / 'SharedLibs/liblldbPluginScriptInterpreterPython.23.1.dylib')
+# LLDB discovers the script interpreter by its unversioned basename.
+(mac / 'SharedLibs/liblldbPluginScriptInterpreterPython.dylib').symlink_to('liblldbPluginScriptInterpreterPython.23.1.dylib')
 for name in ('darwin-debug', 'lldb-argdumper'):
     copy('/opt/homebrew/opt/lldb/bin/' + name, mac / 'lldb/bin' / name)
 native = mac / 'python-lldb/lldb/native/_lldb.abi3.so'

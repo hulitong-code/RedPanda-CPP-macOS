@@ -6,6 +6,7 @@ import plistlib
 import shutil
 import subprocess as sp
 import sys
+import tempfile
 
 app = Path(sys.argv[1]).resolve()
 output = Path(sys.argv[2]).resolve()
@@ -17,6 +18,17 @@ output.mkdir(parents=True, exist_ok=True)
 
 def run(*args): sp.run([str(x) for x in args], check=True)
 contents = app / 'Contents'
+plugin = contents / 'Resources/Toolchain/SharedLibs/liblldbPluginScriptInterpreterPython.dylib'
+if not plugin.is_file():
+    raise RuntimeError('Missing LLDB Python plugin discovery entry; container displays would be incorrect')
+# Exercise synthetic children as well as scalar variables before shipping a DMG.
+with tempfile.TemporaryDirectory(prefix='redpanda-dmg-containers-') as directory:
+    program = Path(directory) / 'containers_debug'
+    run(contents / 'MacOS/gcc/bin/g++', '-std=c++17', '-g', '-O0',
+        root / 'tests/macos/containers_debug.cpp', '-o', program)
+    run(sys.executable, root / 'tests/macos/mi_container_smoke.py',
+        contents / 'MacOS/lldb/bin/lldb-mi', program)
+
 for p in list((contents / 'PlugIns').rglob('*.dylib')) + list((contents / 'Frameworks').glob('*.dylib')) + list((contents / 'Frameworks').glob('*.framework')) + [p for p in (contents / 'MacOS').iterdir() if p.is_file() and not p.is_symlink()]:
     run('codesign', '--force', '--sign', '-', p)
 info = contents / 'Info.plist'
@@ -30,7 +42,7 @@ resources = installer / 'Contents/Resources'
 (resources.parent / 'MacOS').mkdir(parents=True)
 resources.mkdir()
 run('/usr/bin/clang', '-fobjc-arc', '-framework', 'Cocoa', '-mmacosx-version-min=26.0', root / 'packages/macos/standalone/Installer.m', '-o', installer / 'Contents/MacOS/Installer')
-plist = {'CFBundleExecutable':'Installer', 'CFBundleIdentifier':'net.redpanda-cpp.PrivateInstaller', 'CFBundleName':'Red Panda C++ Installer', 'CFBundleDisplayName':'安装 Red Panda C++', 'CFBundlePackageType':'APPL', 'CFBundleVersion':'1.0.1', 'CFBundleShortVersionString':'1.0.1', 'LSMinimumSystemVersion':'26.0', 'NSHighResolutionCapable':True}
+plist = {'CFBundleExecutable':'Installer', 'CFBundleIdentifier':'net.redpanda-cpp.PrivateInstaller', 'CFBundleName':'Red Panda C++ Installer', 'CFBundleDisplayName':'安装 Red Panda C++', 'CFBundlePackageType':'APPL', 'CFBundleVersion':'1.0.2', 'CFBundleShortVersionString':'1.0.2', 'LSMinimumSystemVersion':'26.0', 'NSHighResolutionCapable':True}
 icons = list((contents / 'Resources').glob('*.icns'))
 if icons:
     shutil.copy2(icons[0], resources / 'Installer.icns')
@@ -94,7 +106,7 @@ examples = work / 'Examples'
 examples.mkdir()
 for name in ('mi_input.cpp', 'bits_debug.cpp'):
     shutil.copy2(root / 'tests/macos' / name, examples / name)
-dmg = output / 'RedPanda-CPP-AppleSilicon-Private-20261116-r2.dmg'
+dmg = output / 'RedPanda-CPP-AppleSilicon-Private-20261116-r3.dmg'
 if dmg.exists(): raise RuntimeError(f'Refusing to overwrite {dmg}')
 run('hdiutil', 'create', '-volname', 'Red Panda C++ Installer', '-srcfolder', work, '-format', 'UDZO', '-ov', dmg)
 digest = hashlib.file_digest(dmg.open('rb'), 'sha256').hexdigest()

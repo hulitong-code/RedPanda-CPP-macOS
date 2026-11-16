@@ -1,5 +1,7 @@
 Red Panda C++ Version 3.6
 
+  - fix: Load the bundled LLDB Python interpreter so GNU containers show their real sizes and elements in local variables and watches.
+
   - fix: Restore breakpoint clicks in the gutter icon margin while preserving line-number selection and code folding.
 
   - enhancement: Add a private-use Apple Silicon DMG workflow with bundled GCC/SDK/LLDB and a native installer that preserves settings and moves older applications to Trash.
