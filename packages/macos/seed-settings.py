@@ -1,13 +1,31 @@
 #!/usr/bin/env python3
 """Create first-install settings without replacing existing user preferences."""
 import argparse
+import datetime
+import json
+import shutil
 from pathlib import Path
 import subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output', type=Path, default=Path.home() / 'Library/Application Support/Red Panda C++/redpandacpp.ini')
+parser.add_argument('--app', type=Path)
+parser.add_argument('--moved-manifest', type=Path)
 args = parser.parse_args()
 if args.output.exists():
+    if args.app and args.moved_manifest and args.moved_manifest.exists():
+        original = args.output.read_text(encoding='utf-8')
+        updated = original
+        for entry in json.loads(args.moved_manifest.read_text()):
+            for previous in {entry['from'], entry.get('canonical_from', entry['from'])}:
+                updated = updated.replace(previous + '/Contents/MacOS',
+                                          str(args.app) + '/Contents/MacOS')
+        if updated != original:
+            stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            backup = args.output.with_name(args.output.name + '.before-relocation-' + stamp)
+            shutil.copy2(args.output, backup)
+            args.output.write_text(updated, encoding='utf-8')
+            print('Updated relocated tool paths; prior settings backed up:', backup)
     print('Existing settings preserved:', args.output)
     raise SystemExit(0)
 gcc = '/opt/homebrew/opt/gcc@15/bin/gcc-15'

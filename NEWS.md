@@ -1,5 +1,7 @@
 Red Panda C++ Version 3.6
 
+  - enhancement: Replace previous macOS application versions via recoverable Trash cleanup and migrate their configured tool paths.
+
   - enhancement: Add a reproducible Apple Silicon installer with first-install Chinese/One Dark/GCC settings and native Qt deployment.
 
   - enhancement: Show a solid red breakpoint marker in the Contrast icon set.

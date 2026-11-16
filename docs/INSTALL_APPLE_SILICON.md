@@ -23,7 +23,7 @@ an unrelated Mac and assume its linked LLDB/LLVM libraries are compatible.
 
 ```sh
 mkdir -p "$HOME/Developer"
-git clone --branch macos-v1.0.0 --depth 1 \
+git clone --branch macos-v1.0.1 --depth 1 \
   https://github.com/hulitong-code/RedPanda-CPP-macOS.git \
   "$HOME/Developer/RedPanda-CPP-macOS"
 cd "$HOME/Developer/RedPanda-CPP-macOS"
@@ -34,8 +34,17 @@ The script installs Homebrew dependencies, builds the IDE and patched LLDB-MI,
 runs the five Qt test suites, deploys native Qt plugins, validates a real
 `<bits/stdc++.h>` program, verifies the ad-hoc signature, and installs to
 `~/Applications/RedPandaIDE.app`. Save work and quit existing IDE instances first.
-An existing destination is renamed to a dated backup; existing user settings
-are never replaced. The script does not ask for or store GitHub credentials.
+Before installation, other recognized Red Panda application bundles under
+`/Applications` and the current user's home are moved to Trash. The scan excludes
+Trash, hidden/cache directories, the user's Library, symlinked directories, and
+unrelated applications. Protected or another user's installations may require
+manual cleanup. A permissions failure stops installation before copying the new
+app. After installation the generated staging app is removed and a second scan
+checks that only the destination remains in these locations. The Trash manifest
+records every moved bundle, so cleanup is reversible. Source folders and normal
+user preferences are preserved. Existing compiler paths pointing inside a moved
+app are relocated after backing up the settings file; all other settings remain
+unchanged. The script does not ask for or store GitHub credentials.
 
 For a fresh user profile, it configures Simplified Chinese, One Dark, the
 Contrast icon set with solid red breakpoint dots, and GCC 15 Debug by default.

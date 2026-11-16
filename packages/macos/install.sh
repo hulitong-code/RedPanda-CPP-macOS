@@ -54,20 +54,21 @@ if [[ $build_only == 1 ]]; then
     echo "Build verified: $app"
     exit 0
 fi
-[[ "$app_destination" == /* && "$app_destination" == *.app && ! -L "$app_destination" ]] || { echo 'Use an absolute, non-symlink .app destination.' >&2; exit 2; }
+[[ "$app_destination" != "$app" && "$app_destination" == /* && "$app_destination" == *.app && ! -L "$app_destination" ]] || { echo 'Use an absolute, non-symlink .app destination.' >&2; exit 2; }
 if pgrep -x RedPandaIDE >/dev/null; then
     echo 'Save your work and quit Red Panda C++ before installing. The verified build is ready; rerun with --skip-deps.' >&2
     exit 1
 fi
 mkdir -p "$(dirname "$app_destination")"
-if [[ -e "$app_destination" ]]; then
-    backup="$app_destination.backup-$(date +%Y%m%d-%H%M%S)-$$"
-    mv "$app_destination" "$backup"
-    echo "Previous application backed up to: $backup"
-fi
+# Keep the verified staging bundle until the replacement has been installed.
+python3 "$root/packages/macos/cleanup-apps.py" --protect "$app" --destination "$app_destination" --manifest "$smoke_dir/moved.json"
 ditto "$app" "$app_destination"
 codesign --verify --deep --strict "$app_destination"
-python3 "$root/packages/macos/seed-settings.py"
+python3 "$root/packages/macos/seed-settings.py" --app "$app_destination" --moved-manifest "$smoke_dir/moved.json"
+# Remove the generated staging bundle so only the installed version remains.
+rm -rf "$app"
+python3 "$root/packages/macos/cleanup-apps.py" --protect "$app_destination" --check
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app_destination"
 echo "Installed: $app_destination"
 echo 'For debugging, check DevToolsSecurity -status. If disabled, enable it only with the owner’s consent: sudo DevToolsSecurity -enable'
 echo 'Launch the app and use the GCC 15 Apple Silicon Debug profile. Existing settings were preserved.'
