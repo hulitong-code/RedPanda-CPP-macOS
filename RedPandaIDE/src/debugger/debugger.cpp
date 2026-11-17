@@ -92,6 +92,12 @@ bool Debugger::startClient(int compilerSetIndex,
     QMutexLocker locker{&mClientMutex};
     if (mClient!=nullptr)
         return false;
+    // A restored project can leave the view on project breakpoints while the
+    // active debug target is a standalone file. Bind both models to the target
+    // before initializing the client or sending breakpoints and watches.
+    const bool forProject = sourceFile.isEmpty();
+    mBreakpointModel->setIsForProject(forProject);
+    mWatchModel->setIsForProject(forProject);
     mCurrentSourceFile = sourceFile;
     PCompilerSet compilerSet = pSettings->compilerSets().getSet(compilerSetIndex);
     if (!compilerSet) {

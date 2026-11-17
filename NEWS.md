@@ -1,5 +1,7 @@
 Red Panda C++ Version 3.6
 
+  - fix: Select breakpoints and watches for the actual debug target when a restored project coexists with standalone files.
+
   - fix: Resolve variable types through using-namespace directives so unqualified vector declarations offer member completion.
 
   - fix: Make bundled tool wrappers independent of PATH and the caller's working directory during compiler discovery.

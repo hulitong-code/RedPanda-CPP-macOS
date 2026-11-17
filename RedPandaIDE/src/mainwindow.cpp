@@ -2085,6 +2085,12 @@ void MainWindow::openProject(QString filename, bool openFiles)
     }
 
     Editor * e = mEditorManager->getEditor();
+    // Loading project state must not select its models over an already visible
+    // standalone editor, including when restoring the previous session.
+    const bool forProject = !e || e->inProject();
+    mDebugger->setIsForProject(forProject);
+    mBookmarkModel->setIsForProject(forProject);
+    mTodoModel->setIsForProject(forProject);
     if (e) {
         checkSyntaxInBack(e);
     }
@@ -3776,6 +3782,10 @@ void MainWindow::loadLastOpens()
         focusedEditor = mEditorManager->getEditor();
     if (focusedEditor) {
         mEditorManager->activeEditor(focusedEditor, true);
+        // Focus/show events may not run during session restoration.
+        mDebugger->setIsForProject(focusedEditor->inProject());
+        mBookmarkModel->setIsForProject(focusedEditor->inProject());
+        mTodoModel->setIsForProject(focusedEditor->inProject());
         updateClassBrowserForEditor(focusedEditor);
     }
     Editor *e = mEditorManager->getEditor(-1, mEditorManager->leftPageWidget());
