@@ -1,5 +1,7 @@
 Red Panda C++ Version 3.6
 
+  - fix: Complete members through standard container iterators, smart pointers and overloaded arrow operators; preserve nested template arguments and namespace imports during auto deduction.
+
   - fix: Select breakpoints and watches for the actual debug target when a restored project coexists with standalone files.
 
   - fix: Resolve variable types through using-namespace directives so unqualified vector declarations offer member completion.

@@ -289,6 +289,140 @@ void TestWidgets::test_code_completion_bundled_gcc()
 
 }
 
+void TestWidgets::test_code_completion_map_iterator()
+{
+
+    const QString compiler = qEnvironmentVariable("REDPANDA_TEST_GCC");
+    if (compiler.isEmpty())
+        QSKIP("Set REDPANDA_TEST_GCC to test a packaged compiler");
+    CompilerSet set;
+    set.setCompilerType(CompilerType::GCC);
+    set.setCCompiler(compiler);
+    set.setUseCustomCompileParams(true);
+    set.setCustomCompileParams("-std=c++17 -g -O0");
+    set.binDirs().append(QFileInfo(compiler).absolutePath());
+    mParser = std::make_shared<CppParser>();
+    for (const QString &path : set.defaultCppIncludeDirs())
+        mParser->addIncludePath(path);
+    QVERIFY(!set.defaultCppIncludeDirs().isEmpty());
+    for (const QString &define : set.defines(true))
+        mParser->addHardDefineByLine(define);
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString main = tmp.filePath("vector.cpp");
+    QFile file(main);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("#include <bits/stdc++.h>\nusing namespace std;\nint main() {\n"
+               "map<int, string> mapStudent;\n"
+               "mapStudent.insert(pair<int, string>(1, \"student_one\"));\n"
+               "map<int, string>::iterator iter;\n"
+               "for(iter = mapStudent.begin(); iter != mapStudent.end(); iter++)\n"
+               "    iter->\n}\n");
+    file.close();
+    CppParser::parseFileBlocking(mParser, main, false, "");
+    QVERIFY(mParser->findStatement("std::map"));
+    CodeCompletionPopup popup(mColorManager.get(), nullptr);
+    popup.setParser(mParser);
+    const QSet<QString> names = completionNames(popup, "iter", main,
+        CodeCompletionType::Normal, {}, {}, {}, 7, "->", {});
+    QVERIFY2(names.contains("first"), qPrintable(QStringList(names.values()).join(", ")));
+    QVERIFY2(names.contains("second"), qPrintable(QStringList(names.values()).join(", ")));
+    QStringList keyExpression{"iter", "->", "first"};
+    const auto key = mParser->evalExpression(main, keyExpression, mParser->findScopeStatement(main, 7));
+    QCOMPARE(key.type.qualifiedName, QString("int"));
+    QVERIFY(key.type.qualifiers.testFlag(TypeQualifier::Const));
+    QStringList valueExpression{"iter", "->", "second"};
+    const auto value = mParser->evalExpression(main, valueExpression, mParser->findScopeStatement(main, 7));
+    QVERIFY(value.type.declaration.lock());
+    QCOMPARE(value.type.declaration.lock()->command, QString("basic_string"));
+}
+
+void TestWidgets::test_code_completion_member_access_data()
+{
+    QTest::addColumn<QString>("declaration");
+    QTest::addColumn<QString>("expression");
+    QTest::addColumn<QString>("operation");
+    QTest::addColumn<QStringList>("expected");
+    const QStringList record{"id", "name", "study"};
+    const QStringList pair{"first", "second"};
+    const QStringList string{"size", "empty", "substr"};
+    QTest::newRow("struct") << "Student item;" << "item" << "." << record;
+    QTest::newRow("struct-pointer") << "Student *item;" << "item" << "->" << record;
+    QTest::newRow("const-pointer") << "const Student *item;" << "item" << "->" << record;
+    QTest::newRow("reference") << "Student base; Student &item=base;" << "item" << "." << record;
+    QTest::newRow("pointer-alias") << "using Ptr=Student*; Ptr item;" << "item" << "->" << record;
+    QTest::newRow("proxy") << "Proxy item;" << "item" << "->" << record;
+    QTest::newRow("nested-proxy") << "NestedProxy item;" << "item" << "->" << record;
+    QTest::newRow("cyclic-proxy") << "LoopProxy item;" << "item" << "->" << QStringList{};
+    QTest::newRow("wrong-pointer-dot") << "Student *item;" << "item" << "." << QStringList{};
+    QTest::newRow("wrong-struct-arrow") << "Student item;" << "item" << "->" << QStringList{};
+    QTest::newRow("unique-pointer") << "unique_ptr<Student> item;" << "item" << "->" << record;
+    QTest::newRow("shared-pointer") << "shared_ptr<Student> item;" << "item" << "->" << record;
+    QTest::newRow("map-qualified") << "std::map<int,std::string>::iterator item;" << "item" << "->" << pair;
+    QTest::newRow("map-const") << "map<int,string>::const_iterator item;" << "item" << "->" << pair;
+    QTest::newRow("map-reverse") << "map<int,string>::reverse_iterator item;" << "item" << "->" << pair;
+    QTest::newRow("map-auto") << "map<int,string> data; auto item=data.begin();" << "item" << "->" << pair;
+    QTest::newRow("map-value-chain") << "map<int,string>::iterator item;" << "item->second" << "." << string;
+    QTest::newRow("map-struct-chain") << "map<int,Student>::iterator item;" << "item->second" << "." << record;
+    QTest::newRow("map-key-struct") << "map<Student,int>::iterator item;" << "item->first" << "." << record;
+    QTest::newRow("vector-iterator") << "vector<Student>::iterator item;" << "item" << "->" << record;
+    QTest::newRow("vector-auto") << "vector<Student> data; auto item=data.begin();" << "item" << "->" << record;
+    QTest::newRow("list-iterator") << "list<Student>::iterator item;" << "item" << "->" << record;
+    QTest::newRow("set-iterator") << "set<Student>::iterator item;" << "item" << "->" << record;
+    QTest::newRow("unordered-map") << "unordered_map<int,string>::iterator item;" << "item" << "->" << pair;
+    QTest::newRow("pointer-pointer") << "Student **item;" << "item" << "->" << QStringList{};
+    QTest::newRow("dereferenced-pointer") << "Student *item;" << "(*item)" << "." << record;
+    QTest::newRow("array-element") << "Student items[3];" << "items[0]" << "." << record;
+    QTest::newRow("pointer-member-chain") << "Student *item;" << "item->name" << "." << string;
+    QTest::newRow("map-dereference") << "map<int,string>::iterator item;" << "(*item)" << "." << pair;
+    QTest::newRow("unique-array-no-arrow") << "unique_ptr<Student[]> item;" << "item" << "->" << QStringList{};
+}
+
+void TestWidgets::test_code_completion_member_access()
+{
+    QFETCH(QString, declaration);
+    QFETCH(QString, expression);
+    QFETCH(QString, operation);
+    QFETCH(QStringList, expected);
+    const QString compiler = qEnvironmentVariable("REDPANDA_TEST_GCC");
+    if (compiler.isEmpty())
+        QSKIP("Set REDPANDA_TEST_GCC to test a packaged compiler");
+    CompilerSet set;
+    set.setCompilerType(CompilerType::GCC);
+    set.setCCompiler(compiler);
+    set.setUseCustomCompileParams(true);
+    set.setCustomCompileParams("-std=c++17 -g -O0");
+    set.binDirs().append(QFileInfo(compiler).absolutePath());
+    mParser = std::make_shared<CppParser>();
+    for (const QString &path : set.defaultCppIncludeDirs())
+        mParser->addIncludePath(path);
+    QVERIFY(!set.defaultCppIncludeDirs().isEmpty());
+    for (const QString &define : set.defines(true))
+        mParser->addHardDefineByLine(define);
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString main = tmp.filePath("vector.cpp");
+    QFile file(main);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write(QString("#include <bits/stdc++.h>\nusing namespace std;\n"
+        "struct Student { int id; string name; void study(); };\n"
+        "struct Proxy { Student *operator->(); };\n"
+        "struct NestedProxy { Proxy operator->(); };\n"
+        "struct LoopProxy { LoopProxy operator->(); };\n"
+        "int main() {\n%1\n%2%3\n}\n").arg(declaration, expression, operation).toUtf8());
+    file.close();
+    CppParser::parseFileBlocking(mParser, main, false, "");
+    QVERIFY(mParser->findStatement("std::map"));
+    CodeCompletionPopup popup(mColorManager.get(), nullptr);
+    popup.setParser(mParser);
+    const QSet<QString> names = completionNames(popup, expression, main,
+        CodeCompletionType::Normal, {}, {}, {}, 8, operation, {});
+    for (const QString &name : expected)
+        QVERIFY2(names.contains(name), qPrintable(name + ": " + QStringList(names.values()).join(", ")));
+    if (expected.isEmpty())
+        QVERIFY(names.isEmpty());
+}
+
 void TestWidgets::test_code_completion_inherited_access()
 {
     CodeCompletionPopup popup(mColorManager.get(), nullptr);

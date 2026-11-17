@@ -80,6 +80,8 @@ public:
     QList<PStatement> listLiteralOperators(const QString& fileName, int line) const;
     EvalResult evalExpression(const QString& fileName, QStringList& expression,
                               const PStatement& currentScope) const;
+    TypeInfo memberAccessType(const QString &fileName, const TypeInfo &owner,
+                              bool arrow) const;
     PStatement findTypeDefinitionOf(const QString& fileName, const QString& typeName,
                                     const PStatement& currentClass) const;
     PStatement findTypeDef(const PStatement& statement, const QString& fileName) const;

@@ -669,7 +669,10 @@ PStatement CppStatementBuilder::createStatement(const DeclarationInfo &declarati
             PStatement evaluationContext = context.parentScope;
             if (!declaration.rangeExpression.isEmpty() && evaluationContext)
                 evaluationContext = evaluationContext->parentScope.lock();
-            EvalResult evaluated = mExpressionEvaluator.evaluate(tokenizer, evaluationContext);
+            CppTypeResolver resolver(mModel, context.fileInfo ? context.fileInfo->usings() : QSet<QString>());
+            TypeOperationRegistry operations(resolver);
+            CppExpressionEvaluator evaluator(mModel, resolver, operations);
+            EvalResult evaluated = evaluator.evaluate(tokenizer, evaluationContext);
             if (evaluated.isValid()) {
                 TypeInfo initializerType = evaluated.type;
                 if (!declaration.rangeExpression.isEmpty()) {

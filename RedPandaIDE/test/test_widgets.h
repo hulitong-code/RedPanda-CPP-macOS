@@ -37,6 +37,9 @@ private slots:
     void init();
     void test_code_completion_bundled_gcc_data();
     void test_code_completion_bundled_gcc();
+    void test_code_completion_map_iterator();
+    void test_code_completion_member_access_data();
+    void test_code_completion_member_access();
     void test_code_completion_inherited_access();
     void test_code_completion_complex_keyword();
     void test_code_completion_labels();

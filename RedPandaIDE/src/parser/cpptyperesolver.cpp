@@ -279,7 +279,48 @@ void CppTypeResolver::bindParameterType(const TypeInfo &parameter, const TypeInf
 TypeInfo CppTypeResolver::resolveType(const TypeInfo &type, const TemplateBindings &bindings,
                                       const PStatement &context, QSet<const Statement *> &aliases) const
 {
+    auto retainIteratorValue = [&](TypeInfo &target, const PStatement &alias,
+                                   const TemplateBindings &local) {
+        const PStatement owner = alias->parentScope.lock();
+        static const QSet<QString> containers{
+            "std::map", "std::multimap", "std::unordered_map", "std::unordered_multimap",
+            "std::vector", "std::list", "std::forward_list", "std::deque", "std::array",
+            "std::set", "std::multiset", "std::unordered_set", "std::unordered_multiset"};
+        static const QSet<QString> iterators{
+            "iterator", "const_iterator", "reverse_iterator", "const_reverse_iterator"};
+        if (!owner || !containers.contains(QString(owner->fullName).replace("std::__cxx11::", "std::")) || !iterators.contains(alias->command))
+            return;
+        PStatement value = findMember(owner, "value_type");
+        if (!value)
+            return;
+        TypeInfo element = resolveType(value->typeInfo, local, owner, aliases);
+        // Ordered and unordered maps have the same public value_type contract;
+        // allocator-dependent hash/tree implementation bases can obscure it.
+        if (owner->command.contains("map") && owner->templateParameters.size() >= 2) {
+            const auto key = local.value(owner->templateParameters[0].name);
+            const auto mapped = local.value(owner->templateParameters[1].name);
+            if (key.type && mapped.type) {
+                TypeInfo constKey = *key.type;
+                constKey.qualifiers.setFlag(TypeQualifier::Const);
+                TypeInfo pair;
+                pair.qualifiedName = "std::pair";
+                pair.templateArguments = {TemplateArgument::fromType(constKey), mapped};
+                element = resolveType(pair, local, owner, aliases);
+            }
+        }
+        if (alias->command.startsWith("const_") || owner->command.contains("set"))
+            element.qualifiers.setFlag(TypeQualifier::Const);
+        if (!element.qualifiedName.isEmpty())
+            target.iteratorValueType = std::make_shared<TypeInfo>(element);
+    };
     TypeInfo result = type;
+    for (const QString &prefix : {QString("typename "), QString("struct "),
+                                  QString("class "), QString("union ")}) {
+        if (result.qualifiedName.startsWith(prefix)) {
+            result.qualifiedName.remove(0, prefix.length());
+            break;
+        }
+    }
     materializeTemplateArguments(result);
     auto binding = bindings.constFind(result.qualifiedName);
     if (binding != bindings.constEnd()
@@ -305,6 +346,44 @@ TypeInfo CppTypeResolver::resolveType(const TypeInfo &type, const TemplateBindin
         }
     }
 
+    // Resolve a qualified type through its instantiated owner, including
+    // intermediate aliases such as map<K,V>::_Rep_type::iterator.
+    int separator = -1;
+    int depth = 0;
+    for (int i = 0; i + 1 < result.qualifiedName.size(); ++i) {
+        const QChar ch = result.qualifiedName[i];
+        if (ch == '<') ++depth;
+        else if (ch == '>') --depth;
+        else if (depth == 0 && ch == ':' && result.qualifiedName[i + 1] == ':')
+            separator = i++;
+    }
+    if (separator > 0) {
+        CppTokenizer tokenizer;
+        tokenizer.tokenize({result.qualifiedName.left(separator)});
+        CppTokenCursor cursor(tokenizer);
+        CppDeclarationParser parser(cursor);
+        DeclSpecifierInfo specifiers;
+        if (parser.parseDeclSpecifierSeq(specifiers)) {
+            TypeInfo owner = resolveType(specifiers.type, bindings, context, aliases);
+            PStatement ownerDeclaration = owner.declaration.lock();
+            if (ownerDeclaration && ownerDeclaration->kind == StatementKind::Class) {
+                PStatement member = findMember(ownerDeclaration,
+                                              result.qualifiedName.mid(separator + 2));
+                if (member && isAlias(member) && !aliases.contains(member.get())) {
+                    aliases.insert(member.get());
+                    TemplateBindings local = declarationBindings(ownerDeclaration, owner, bindings);
+                    local = declarationBindings(member, result, local);
+                    TypeInfo target = resolveType(member->typeInfo, local, ownerDeclaration, aliases);
+                    aliases.remove(member.get());
+                    retainIteratorValue(target, member, local);
+                    target.qualifiers |= result.qualifiers;
+                    target.derivations += result.derivations;
+                    return target;
+                }
+            }
+        }
+    }
+
     PStatement declaration = result.declaration.lock();
     if (!declaration)
         declaration = findDeclaration(result.qualifiedName, context);
@@ -316,6 +395,7 @@ TypeInfo CppTypeResolver::resolveType(const TypeInfo &type, const TemplateBindin
         TypeInfo target = resolveType(declaration->typeInfo, localBindings,
                                       declaration->parentScope.lock(), aliases);
         aliases.remove(declaration.get());
+        retainIteratorValue(target, declaration, localBindings);
         target.qualifiers |= result.qualifiers;
         target.derivations += result.derivations;
         return target;
@@ -471,6 +551,15 @@ PStatement CppTypeResolver::findMemberRecursive(const PStatement &scope, const Q
     for (const std::weak_ptr<Statement> &weak : directCandidates) {
         PStatement candidate = weak.lock();
         if (!candidate)
+            continue;
+        // Out-of-class constructor definitions can be indexed in a namespace;
+        // they must not hide the class itself in another namespace fragment.
+        if (scope->kind == StatementKind::Namespace
+                && (candidate->kind == StatementKind::Constructor
+                    || candidate->kind == StatementKind::Destructor
+                    || (isInvocable(candidate)
+                        && candidate->fullName != (scope->fullName.isEmpty()
+                            ? name : scope->fullName + "::" + name))))
             continue;
         if (candidate->kind != StatementKind::Namespace || candidate->command == name)
             return candidate;

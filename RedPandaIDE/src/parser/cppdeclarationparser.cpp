@@ -661,9 +661,11 @@ bool CppDeclarationParser::parseTypeName(TypeInfo &result)
                 return false;
             }
         }
-        if (mCursor.consume("::"))
-            name += "::";
-        else
+        if (mCursor.consume("::")) {
+            // Template arguments belong to the component before the scope operator.
+            name += result.templateArgumentsText + "::";
+            result.templateArgumentsText.clear();
+        } else
             break;
     }
     if (name.isEmpty()) {
@@ -715,7 +717,7 @@ bool CppDeclarationParser::parseTemplateArguments(TypeInfo &result)
         if (mCursor.current().kind == CppTokenizer::TokenKind::Operator) {
             if (text == "<") {
                 ++level;
-                argument += text;
+                appendToken(argument, text);
                 mCursor.advance();
                 continue;
             }
@@ -736,7 +738,7 @@ bool CppDeclarationParser::parseTemplateArguments(TypeInfo &result)
             mCursor.advance();
             continue;
         }
-        argument += text;
+        appendToken(argument, text);
         mCursor.advance();
     }
     mCursor.restore(start);

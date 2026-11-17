@@ -28,6 +28,8 @@ public:
 
     EvalResult evaluate(const CppTokenizer &tokenizer, const PStatement &context = {}) const;
 
+    TypeInfo memberReceiver(TypeInfo type, bool arrow) const;
+
 private:
     using TokenList = QVector<CppTokenizer::Token>;
 
@@ -49,7 +51,6 @@ private:
                            const QString &operatorName) const;
     PStatement findVisibleStatement(const QString &name, const PStatement &context) const;
     PStatement findDirectStatement(const PStatement &scope, const QString &name) const;
-    TypeInfo memberReceiver(TypeInfo type, bool arrow) const;
     TypeInfo dereference(TypeInfo type) const;
     TypeInfo addressOf(TypeInfo type) const;
     TypeInfo applyIncrement(TypeInfo type, const QString &operatorName) const;

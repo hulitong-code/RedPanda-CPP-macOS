@@ -755,6 +755,19 @@ EvalResult CppParser::doEvalExpression(const QString &fileName, QStringList &exp
     return evaluator.evaluate(tokenizer, currentScope);
 }
 
+TypeInfo CppParser::memberAccessType(const QString &fileName, const TypeInfo &owner,
+                                     bool arrow) const
+{
+    QMutexLocker locker(&mMutex);
+    if (mParsing)
+        return {};
+    PParsedFileInfo info = mPreprocessor.findFileInfo(fileName);
+    CppTypeResolver resolver(mStatementList, info ? info->usings() : QSet<QString>());
+    TypeOperationRegistry operations(resolver);
+    CppExpressionEvaluator evaluator(mStatementList, resolver, operations);
+    return evaluator.memberReceiver(owner, arrow);
+}
+
 PStatement CppParser::findTypeDefinitionOf(const QString &fileName, const QString &typeName,
                                            const PStatement &currentClass) const
 {

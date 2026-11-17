@@ -55,3 +55,9 @@ Build `test-widgets` in `build/macos` before assembling the DMG. The assembler
 runs its standard-library completion test against the staged compiler, covering
 `<vector>` and `<bits/stdc++.h>`, qualified names, global/function-local using
 directives, and nested vectors.
+
+The packaging gate also checks map iterator `first`/`second` completion and member
+access through structs, raw pointers, references, standard container iterators,
+smart pointers and chained overloaded arrow operators. It checks invalid pointer
+access and cyclic arrow operators as negative cases. These tests use the actual
+bundled GCC headers through the parser and completion popup model.

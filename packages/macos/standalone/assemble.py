@@ -35,7 +35,9 @@ if not widget_test.is_file():
     raise RuntimeError('Build test-widgets before assembling the standalone DMG')
 test_env = dict(os.environ, QT_QPA_PLATFORM='offscreen',
                 REDPANDA_TEST_GCC=str(contents / 'MacOS/gcc/bin/gcc'))
-sp.run([str(widget_test), 'test_code_completion_bundled_gcc'], env=test_env, check=True)
+sp.run([str(widget_test), 'test_code_completion_bundled_gcc',
+        'test_code_completion_map_iterator', 'test_code_completion_member_access'],
+       env=test_env, check=True)
 # Exercise synthetic children as well as scalar variables before shipping a DMG.
 with tempfile.TemporaryDirectory(prefix='redpanda-dmg-containers-') as directory:
     program = Path(directory) / 'containers_debug'
@@ -57,7 +59,7 @@ resources = installer / 'Contents/Resources'
 (resources.parent / 'MacOS').mkdir(parents=True)
 resources.mkdir()
 run('/usr/bin/clang', '-fobjc-arc', '-framework', 'Cocoa', '-mmacosx-version-min=26.0', root / 'packages/macos/standalone/Installer.m', '-o', installer / 'Contents/MacOS/Installer')
-plist = {'CFBundleExecutable':'Installer', 'CFBundleIdentifier':'net.redpanda-cpp.PrivateInstaller', 'CFBundleName':'Red Panda C++ Installer', 'CFBundleDisplayName':'安装 Red Panda C++', 'CFBundlePackageType':'APPL', 'CFBundleVersion':'1.0.4', 'CFBundleShortVersionString':'1.0.4', 'LSMinimumSystemVersion':'26.0', 'NSHighResolutionCapable':True}
+plist = {'CFBundleExecutable':'Installer', 'CFBundleIdentifier':'net.redpanda-cpp.PrivateInstaller', 'CFBundleName':'Red Panda C++ Installer', 'CFBundleDisplayName':'安装 Red Panda C++', 'CFBundlePackageType':'APPL', 'CFBundleVersion':'1.0.5', 'CFBundleShortVersionString':'1.0.5', 'LSMinimumSystemVersion':'26.0', 'NSHighResolutionCapable':True}
 icons = list((contents / 'Resources').glob('*.icns'))
 if icons:
     shutil.copy2(icons[0], resources / 'Installer.icns')
@@ -121,7 +123,7 @@ examples = work / 'Examples'
 examples.mkdir()
 for name in ('mi_input.cpp', 'bits_debug.cpp'):
     shutil.copy2(root / 'tests/macos' / name, examples / name)
-dmg = output / 'RedPanda-CPP-AppleSilicon-Private-20261116-r5.dmg'
+dmg = output / 'RedPanda-CPP-AppleSilicon-Private-20261116-r6.dmg'
 if dmg.exists(): raise RuntimeError(f'Refusing to overwrite {dmg}')
 run('hdiutil', 'create', '-volname', 'Red Panda C++ Installer', '-srcfolder', work, '-format', 'UDZO', '-ov', dmg)
 digest = hashlib.file_digest(dmg.open('rb'), 'sha256').hexdigest()

@@ -869,6 +869,19 @@ TypeInfo CppExpressionEvaluator::memberReceiver(TypeInfo type, bool arrow) const
     type = removeReferences(type);
     if (!arrow)
         return type;
+    if (type.derivations.isEmpty() && type.iteratorValueType)
+        return *type.iteratorValueType;
+    // Smart pointer element_type is its public contract, even when internal
+    // allocator/pointer-traits aliases cannot be instantiated by the parser.
+    if (type.derivations.isEmpty()
+            && (type.qualifiedName == "std::unique_ptr" || type.qualifiedName == "std::shared_ptr")
+            && !type.templateArguments.isEmpty() && type.templateArguments.first().type) {
+        TypeInfo element = mResolver.resolve(*type.templateArguments.first().type);
+        if (!element.derivations.isEmpty()
+                && element.derivations.first().kind == TypeDerivationKind::Array)
+            return {};
+        return element;
+    }
     for (int depth = 0; depth < 8; ++depth) {
         if (!type.derivations.isEmpty()
                 && type.derivations.first().kind == TypeDerivationKind::Pointer) {
@@ -890,6 +903,11 @@ TypeInfo CppExpressionEvaluator::dereference(TypeInfo type) const
         type.derivations.removeFirst();
         type.derivations.prepend(TypeDerivation::lvalueReference());
         return type;
+    }
+    if (type.iteratorValueType) {
+        TypeInfo value = *type.iteratorValueType;
+        value.derivations.prepend(TypeDerivation::lvalueReference());
+        return value;
     }
     return mOperations.iteratorReference(type);
 }

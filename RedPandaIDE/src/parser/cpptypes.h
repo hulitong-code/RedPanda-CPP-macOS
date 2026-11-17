@@ -130,6 +130,8 @@ struct TypeDerivation {
 };
 
 struct TypeInfo {
+    // Public container value type, independent of library iterator internals.
+    std::shared_ptr<TypeInfo> iteratorValueType;
     QString qualifiedName;
     std::weak_ptr<Statement> declaration;
     QVector<TemplateArgument> templateArguments;
