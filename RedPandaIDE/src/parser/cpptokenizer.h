@@ -41,6 +41,7 @@ public:
     struct Token {
         QString text;
         SourcePosition position;
+        SourcePosition bufferPosition; // Position before file-boundary remapping.
         int matchIndex = -1;
         TokenKind kind = TokenKind::Operator;
         QString fileName;
@@ -70,7 +71,8 @@ public:
     void stopForParserReset() { mStopForParserReset = true; }
 
 private:
-    void addToken(const QString &text, TokenKind kind, const SourcePosition &position);
+    void addToken(const QString &text, TokenKind kind, const SourcePosition &position,
+                  const SourcePosition &bufferPosition);
     void resolveUnmatchedPairs();
     int nextFileBoundary(int tokenIndex) const;
 
@@ -97,6 +99,7 @@ private:
     QString mBuffer;
     const QChar *mCurrent = nullptr;
     SourcePosition mCurrentPosition;
+    SourcePosition mBufferPosition;
     QString mCurrentFile;
     TokenList mTokenList;
     QVector<int> mUnmatchedBraces;

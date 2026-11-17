@@ -298,6 +298,14 @@ void TestCppTokenizer::test_character_positions()
     QCOMPARE(mTokenizer[1].position, (SourcePosition{0, 4}));
     QCOMPARE(mTokenizer[3].position, (SourcePosition{0, 11}));
     QCOMPARE(mTokenizer[6].position, (SourcePosition{0, 20}));
+
+    tokenize({"#include sample.cpp:20", "  map<int, string>::iterator iter;"});
+    QCOMPARE(mTokenizer[1].position, (SourcePosition{21, 2}));
+    QCOMPARE(mTokenizer[1].bufferPosition, (SourcePosition{1, 2}));
+    mTokenizer.relocateTokens("relocated.cpp", SourcePosition{10, 0});
+    QCOMPARE(mTokenizer[1].position, (SourcePosition{31, 2}));
+    QCOMPARE(mTokenizer[1].bufferPosition, (SourcePosition{1, 2}));
+
 }
 
 void TestCppTokenizer::test_cursor_advance_and_checkpoint()
@@ -640,6 +648,16 @@ void TestCppTokenizer::test_parse_template_type_arguments()
     QCOMPARE(argument.kind, TemplateArgumentKind::Type);
     QVERIFY(argument.type);
     QCOMPARE(argument.type->toString(), "std::vector<int>");
+
+    // Logical header coordinates must not index the combined input buffer.
+    tokenize({"#include /tmp/templates.cpp:100",
+              "map<int, string>::iterator iter;"});
+    CppTokenCursor remappedCursor(mTokenizer);
+    remappedCursor.advance();
+    CppDeclarationParser remappedParser(remappedCursor);
+    DeclarationInfo remapped;
+    QVERIFY(remappedParser.parseSimpleDeclaration(remapped));
+    QCOMPARE(remapped.specifiers.type.qualifiedName, "map<int, string>::iterator");
 
     DeclarationInfo multiline;
     QVERIFY(parseDeclarationText("std::vector<\n  std::vector<int>\n> values;", multiline));

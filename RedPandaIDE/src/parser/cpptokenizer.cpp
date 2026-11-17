@@ -90,6 +90,7 @@ void CppTokenizer::clear()
     mBuffer.clear();
     mCurrent = nullptr;
     mCurrentPosition = SourcePosition{0, 0};
+    mBufferPosition = SourcePosition{0, 0};
     mCurrentFile.clear();
     mTokenList.clear();
     mUnmatchedBraces.clear();
@@ -126,6 +127,7 @@ void CppTokenizer::tokenize(const QStringList &buffer)
             break;
 
         SourcePosition position = mCurrentPosition;
+        SourcePosition bufferPosition = mBufferPosition;
         if (*mCurrent == '[' && startsWith("[[")) {
             skipAttribute();
             continue;
@@ -135,7 +137,7 @@ void CppTokenizer::tokenize(const QStringList &buffer)
             QString text = readPreprocessor();
             TokenKind kind = text.startsWith("#include ")
                     ? TokenKind::FileBoundary : TokenKind::Preprocessor;
-            addToken(text, kind, position);
+            addToken(text, kind, position, bufferPosition);
         } else if (*mCurrent == '"' || *mCurrent == '\''
                    || ((*mCurrent == 'R' || *mCurrent == 'L'
                         || *mCurrent == 'u' || *mCurrent == 'U')
@@ -148,7 +150,7 @@ void CppTokenizer::tokenize(const QStringList &buffer)
                            || startsWith("u8'")))) {
             TokenKind kind = TokenKind::StringLiteral;
             QString text = readLiteral(kind);
-            addToken(text, kind, position);
+            addToken(text, kind, position, bufferPosition);
         } else if (isIdentifierStart(*mCurrent)) {
             QString identifier = readIdentifier();
             if (identifier == "__extension__")
@@ -161,20 +163,21 @@ void CppTokenizer::tokenize(const QStringList &buffer)
                     continue;
                 }
             }
-            addToken(identifier, TokenKind::Identifier, position);
+            addToken(identifier, TokenKind::Identifier, position, bufferPosition);
         } else if (mCurrent->isDigit()
                    || (*mCurrent == '.' && (mCurrent + 1)->isDigit())) {
             TokenKind kind = TokenKind::IntegerLiteral;
             QString text = readNumber(kind);
-            addToken(text, kind, position);
+            addToken(text, kind, position, bufferPosition);
         } else {
-            addToken(readOperator(), TokenKind::Operator, position);
+            addToken(readOperator(), TokenKind::Operator, position, bufferPosition);
         }
     }
     resolveUnmatchedPairs();
 }
 
-void CppTokenizer::addToken(const QString &text, TokenKind kind, const SourcePosition &position)
+void CppTokenizer::addToken(const QString &text, TokenKind kind, const SourcePosition &position,
+                            const SourcePosition &bufferPosition)
 {
     TokenizerProfileScope profileScope(tokenizerProfile.addTokenNs,
                                        tokenizerProfile.addTokenCalls);
@@ -202,6 +205,7 @@ void CppTokenizer::addToken(const QString &text, TokenKind kind, const SourcePos
     Token token;
     token.text = text;
     token.position = position;
+    token.bufferPosition = bufferPosition;
     token.kind = kind;
     token.fileName = mCurrentFile;
     token.matchIndex = opening;
@@ -522,9 +526,12 @@ void CppTokenizer::advance()
     TokenizerProfileScope profileScope(tokenizerProfile.advanceNs,
                                        tokenizerProfile.advanceCalls);
     if (*mCurrent == '\n') {
+        ++mBufferPosition.line;
+        mBufferPosition.ch = 0;
         ++mCurrentPosition.line;
         mCurrentPosition.ch = 0;
     } else {
+        ++mBufferPosition.ch;
         ++mCurrentPosition.ch;
     }
     if (!atEnd())

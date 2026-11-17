@@ -1,5 +1,7 @@
 Red Panda C++ Version 3.6
 
+  - fix: Preserve template source coordinates when replaying cached headers across editor files so map iterator member completion survives opening multiple files and reparsing.
+
   - fix: Complete members through standard container iterators, smart pointers and overloaded arrow operators; preserve nested template arguments and namespace imports during auto deduction.
 
   - fix: Select breakpoints and watches for the actual debug target when a restored project coexists with standalone files.

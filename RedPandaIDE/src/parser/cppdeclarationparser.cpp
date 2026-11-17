@@ -788,24 +788,26 @@ QString CppDeclarationParser::readSourceText(const CppTokenizer::Token &startTok
                                              const CppTokenizer::Token &endToken) const
 {
     if (startToken.fileName != endToken.fileName
-            || !startToken.position.isValid() || !endToken.position.isValid()
-            || endToken.position < startToken.position) {
+            || !startToken.bufferPosition.isValid() || !endToken.bufferPosition.isValid()
+            || endToken.bufferPosition < startToken.bufferPosition) {
         return QString();
     }
+    // File coordinates refer to original headers; sourceLines is the combined
+    // preprocessed stream, whose offsets change when includes are replayed.
     const QStringList &lines = mCursor.sourceLines();
-    if (startToken.position.line >= lines.count() || endToken.position.line >= lines.count())
+    if (startToken.bufferPosition.line >= lines.count() || endToken.bufferPosition.line >= lines.count())
         return QString();
-    if (startToken.position.line == endToken.position.line) {
-        return lines[startToken.position.line].mid(
-                    startToken.position.ch,
-                    endToken.position.ch + endToken.text.length() - startToken.position.ch);
+    if (startToken.bufferPosition.line == endToken.bufferPosition.line) {
+        return lines[startToken.bufferPosition.line].mid(
+                    startToken.bufferPosition.ch,
+                    endToken.bufferPosition.ch + endToken.text.length() - startToken.bufferPosition.ch);
     }
 
-    QStringList result{lines[startToken.position.line].mid(startToken.position.ch)};
-    for (int line = startToken.position.line + 1; line < endToken.position.line; ++line)
+    QStringList result{lines[startToken.bufferPosition.line].mid(startToken.bufferPosition.ch)};
+    for (int line = startToken.bufferPosition.line + 1; line < endToken.bufferPosition.line; ++line)
         result.append(lines[line]);
-    result.append(lines[endToken.position.line].left(
-                endToken.position.ch + endToken.text.length()));
+    result.append(lines[endToken.bufferPosition.line].left(
+                endToken.bufferPosition.ch + endToken.text.length()));
     return result.join(' ');
 }
 

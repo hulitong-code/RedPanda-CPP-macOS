@@ -289,8 +289,19 @@ void TestWidgets::test_code_completion_bundled_gcc()
 
 }
 
+void TestWidgets::test_code_completion_map_iterator_data()
+{
+    QTest::addColumn<bool>("cachedHeaders");
+    QTest::addColumn<int>("parseCount");
+    QTest::newRow("fresh") << false << 1;
+    QTest::newRow("shared-headers") << true << 1;
+    QTest::newRow("shared-headers-reparsed") << true << 2;
+}
+
 void TestWidgets::test_code_completion_map_iterator()
 {
+    QFETCH(bool, cachedHeaders);
+    QFETCH(int, parseCount);
 
     const QString compiler = qEnvironmentVariable("REDPANDA_TEST_GCC");
     if (compiler.isEmpty())
@@ -316,23 +327,32 @@ void TestWidgets::test_code_completion_map_iterator()
                "map<int, string> mapStudent;\n"
                "mapStudent.insert(pair<int, string>(1, \"student_one\"));\n"
                "map<int, string>::iterator iter;\n"
-               "for(iter = mapStudent.begin(); iter != mapStudent.end(); iter++)\n"
-               "    iter->\n}\n");
+               "for(iter = mapStudent.begin(); iter != mapStudent.end(); iter++) {\n"
+               "    cout << iter->\n}\n}\n");
     file.close();
-    CppParser::parseFileBlocking(mParser, main, false, "");
+    mParser->setSharedByFiles(true);
+    const QString previous = tmp.filePath("previous.cpp");
+    QFile previousFile(previous);
+    QVERIFY(previousFile.open(QIODevice::WriteOnly));
+    previousFile.write("#include <bits/stdc++.h>\nusing namespace std;\nint main() { vector<int> numbers; }\n");
+    previousFile.close();
+    if (cachedHeaders)
+        CppParser::parseFileBlocking(mParser, previous, false, "");
+    for (int i = 0; i < parseCount; ++i)
+        CppParser::parseFileBlocking(mParser, main, false, "");
     QVERIFY(mParser->findStatement("std::map"));
     CodeCompletionPopup popup(mColorManager.get(), nullptr);
     popup.setParser(mParser);
     const QSet<QString> names = completionNames(popup, "iter", main,
-        CodeCompletionType::Normal, {}, {}, {}, 7, "->", {});
+        CodeCompletionType::Normal, {}, {}, {}, 8, "->", {});
     QVERIFY2(names.contains("first"), qPrintable(QStringList(names.values()).join(", ")));
     QVERIFY2(names.contains("second"), qPrintable(QStringList(names.values()).join(", ")));
     QStringList keyExpression{"iter", "->", "first"};
-    const auto key = mParser->evalExpression(main, keyExpression, mParser->findScopeStatement(main, 7));
+    const auto key = mParser->evalExpression(main, keyExpression, mParser->findScopeStatement(main, 8));
     QCOMPARE(key.type.qualifiedName, QString("int"));
     QVERIFY(key.type.qualifiers.testFlag(TypeQualifier::Const));
     QStringList valueExpression{"iter", "->", "second"};
-    const auto value = mParser->evalExpression(main, valueExpression, mParser->findScopeStatement(main, 7));
+    const auto value = mParser->evalExpression(main, valueExpression, mParser->findScopeStatement(main, 8));
     QVERIFY(value.type.declaration.lock());
     QCOMPARE(value.type.declaration.lock()->command, QString("basic_string"));
 }

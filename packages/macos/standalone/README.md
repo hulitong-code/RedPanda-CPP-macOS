@@ -61,3 +61,7 @@ access through structs, raw pointers, references, standard container iterators,
 smart pointers and chained overloaded arrow operators. It checks invalid pointer
 access and cyclic arrow operators as negative cases. These tests use the actual
 bundled GCC headers through the parser and completion popup model.
+
+Map iterator acceptance also opens a preceding translation unit with cached
+standard headers, then reparses the target file. This guards against confusing
+original file coordinates with offsets in the combined preprocessed input.
